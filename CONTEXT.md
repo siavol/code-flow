@@ -2,6 +2,54 @@
 
 A tool for generating interactive visual diagrams that document how named user-facing actions move through the packages of an application.
 
+## Repository layout
+
+```
+skills/document-flows/
+├── SKILL.md       ← agent prompt: discovers Packages/Flows/Steps, writes output
+└── index.html     ← the Viewer; copied to flows/ when the skill runs
+
+docs/adr/
+└── 0001-cytoscape-for-viewer.md
+
+CONTEXT.md         ← this file
+```
+
+The skill is invoked as `/document-flows` in Claude Code. It writes two files into the target repo:
+
+```
+flows/
+├── flows.json     ← generated data (see schema below)
+└── index.html     ← copied from skills/document-flows/index.html
+```
+
+## flows.json schema
+
+The contract between the skill (writer) and the Viewer (reader). Pure data — no view information.
+
+```json
+{
+  "packages": [
+    { "id": "auth", "name": "Auth", "path": "src/auth" }
+  ],
+  "flows": [
+    {
+      "id": "invite-user",
+      "name": "Invite new user",
+      "steps": [
+        { "source": "auth", "target": "users", "label": "create pending user", "order": 1 }
+      ]
+    }
+  ]
+}
+```
+
+Field rules:
+- `packages[].id` — lowercased, hyphenated directory name; used as foreign key in steps
+- `steps[].source` / `steps[].target` — must reference a `packages[].id`
+- `steps[].label` — agent-written plain English, 3–6 words; never raw code symbols
+- `steps[].order` — integer starting at 1; multiple steps between the same two packages allowed
+
 ## Language
 
 **Package**:
