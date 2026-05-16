@@ -32,6 +32,7 @@ For each Package collect:
 - `id`: directory name, lowercased, hyphenated (e.g. `api-gateway`)
 - `name`: short human-readable name (e.g. `API Gateway`)
 - `path`: relative path from repo root (e.g. `src/api-gateway`)
+- `entryFile`: relative path to the package's primary entry file (e.g. `src/api-gateway/index.js`); look for `index.js`, `index.ts`, `main.js`, `main.ts`, `app.js`, or the file named in `package.json`'s `main` field; set to `null` if no clear entry file exists
 
 ### 3. Discover Flows
 
@@ -70,7 +71,7 @@ Create `flows/` at the repo root. Write `flows/flows.json`:
 ```json
 {
   "packages": [
-    { "id": "auth", "name": "Auth", "path": "src/auth" }
+    { "id": "auth", "name": "Auth", "path": "src/auth", "entryFile": "src/auth/index.js" }
   ],
   "flows": [
     {

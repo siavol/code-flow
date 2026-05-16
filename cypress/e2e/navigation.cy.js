@@ -17,13 +17,23 @@ describe('Navigation warning', () => {
 });
 
 describe('Package navigation', () => {
-  it('opens vscode URL when clicking a package node', () => {
+  it('opens vscode URL to entryFile when clicking a package node with entryFile', () => {
     setup('settings-vscode.json', {
       onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
     });
     cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
     cy.get('@navigate').should('have.been.calledWith',
-      'vscode://file//Users/me/project/src/auth'
+      'vscode://file//Users/me/project/src/auth/index.js'
+    );
+  });
+
+  it('opens vscode URL to path when clicking a package node without entryFile', () => {
+    setup('settings-vscode.json', {
+      onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
+    });
+    cy.window().then(win => win.eval('cy').getElementById('users').emit('tap'));
+    cy.get('@navigate').should('have.been.calledWith',
+      'vscode://file//Users/me/project/src/users'
     );
   });
 

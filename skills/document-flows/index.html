@@ -215,11 +215,11 @@
     if (!config) return null;
     const providers = {
       vscode: {
-        openPackage: path => window.open(`vscode://file/${config.workspacePath}/${path}`),
+        openPackage: (path, entryFile) => window.open(`vscode://file/${config.workspacePath}/${entryFile || path}`),
         openStep: (file, line) => window.open(`vscode://file/${config.workspacePath}/${file}:${line}`)
       },
       github: {
-        openPackage: path => window.open(`https://github.com/${config.repo}/tree/${config.branch}/${path}`),
+        openPackage: (path) => window.open(`https://github.com/${config.repo}/tree/${config.branch}/${path}`),
         openStep: (file, line) => window.open(`https://github.com/${config.repo}/blob/${config.branch}/${file}#L${line}`)
       }
     };
@@ -250,7 +250,7 @@
     const elements = [];
 
     packages.forEach(pkg => {
-      elements.push({ data: { id: pkg.id, label: pkg.name } });
+      elements.push({ data: { id: pkg.id, label: pkg.name, path: pkg.path, entryFile: pkg.entryFile || null } });
     });
 
     flows.forEach(flow => {
@@ -366,8 +366,8 @@
 
     if (nav) {
       cy.on('tap', 'node', evt => {
-        const pkg = packages.find(p => p.id === evt.target.id());
-        if (pkg) nav.openPackage(pkg.path);
+        const node = evt.target;
+        if (node) nav.openPackage(node.data('path'), node.data('entryFile'));
       });
 
       cy.on('tap', 'edge.visible', evt => {

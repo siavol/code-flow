@@ -42,7 +42,7 @@ The contract between the skill (writer) and the Viewer (reader). Pure data — n
 ```json
 {
   "packages": [
-    { "id": "auth", "name": "Auth", "path": "src/auth" }
+    { "id": "auth", "name": "Auth", "path": "src/auth", "entryFile": "src/auth/index.js" }
   ],
   "flows": [
     {
@@ -61,7 +61,8 @@ The contract between the skill (writer) and the Viewer (reader). Pure data — n
 
 Field rules:
 - `packages[].id` — lowercased, hyphenated directory name; used as foreign key in steps
-- `packages[].path` — relative path from repo root; used as navigation target for the Package
+- `packages[].path` — relative path from repo root; used as navigation target for the Package (directory)
+- `packages[].entryFile` — relative path to the package's primary entry file (e.g. `src/auth/index.js`); used by vscode provider to navigate to a file rather than a directory; `null` when no clear entry file exists
 - `steps[].source` / `steps[].target` — must reference a `packages[].id`
 - `steps[].label` — agent-written plain English, 3–6 words; never raw code symbols
 - `steps[].order` — integer starting at 1; multiple steps between the same two packages allowed
@@ -117,7 +118,7 @@ _Avoid_: source, reference, pointer
 - A **Step** has zero or one **Location**; steps without a Location are rendered in a distinct color and are not navigable
 - The **Viewer** reads one `flows.json` and renders all **Packages** and **Flows**
 - The **Viewer** loads `settings.json` to determine the active **Provider**; if `settings.json` is absent or misconfigured, navigation is disabled and a warning is shown
-- A **Provider** uses `packages[].path` for Package navigation and `steps[].location` for Step navigation
+- A **Provider** uses `packages[].entryFile` (when set) or `packages[].path` for Package navigation, and `steps[].location` for Step navigation
 
 ## Example dialogue
 

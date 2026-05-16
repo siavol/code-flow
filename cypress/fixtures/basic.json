@@ -1,9 +1,9 @@
 {
   "packages": [
-    { "id": "api-gateway", "name": "API Gateway", "path": "src/api-gateway" },
-    { "id": "auth", "name": "Auth", "path": "src/auth" },
-    { "id": "users", "name": "Users", "path": "src/users" },
-    { "id": "email", "name": "Email", "path": "src/email" }
+    { "id": "api-gateway", "name": "API Gateway", "path": "src/api-gateway", "entryFile": "src/api-gateway/index.js" },
+    { "id": "auth", "name": "Auth", "path": "src/auth", "entryFile": "src/auth/index.js" },
+    { "id": "users", "name": "Users", "path": "src/users", "entryFile": null },
+    { "id": "email", "name": "Email", "path": "src/email", "entryFile": "src/email/mailer.js" }
   ],
   "flows": [
     {
