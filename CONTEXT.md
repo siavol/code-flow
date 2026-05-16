@@ -9,6 +9,18 @@ skills/document-flows/
 ├── SKILL.md       ← agent prompt: discovers Packages/Flows/Steps, writes output
 └── index.html     ← the Viewer; copied to flows/ when the skill runs
 
+cypress/
+├── e2e/           ← one spec per Viewer behavior
+│   ├── sidebar.cy.js
+│   ├── graph.cy.js
+│   ├── highlighting.cy.js
+│   ├── deselect.cy.js
+│   └── error-state.cy.js
+└── fixtures/      ← one JSON file per data scenario
+
+cypress.config.js  ← serves skills/document-flows/ as the test origin
+package.json
+
 docs/adr/
 └── 0001-cytoscape-for-viewer.md
 

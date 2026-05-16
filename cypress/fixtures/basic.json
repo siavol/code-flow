@@ -1,0 +1,27 @@
+{
+  "packages": [
+    { "id": "api-gateway", "name": "API Gateway", "path": "src/api-gateway" },
+    { "id": "auth", "name": "Auth", "path": "src/auth" },
+    { "id": "users", "name": "Users", "path": "src/users" },
+    { "id": "email", "name": "Email", "path": "src/email" }
+  ],
+  "flows": [
+    {
+      "id": "invite-user",
+      "name": "Invite new user",
+      "steps": [
+        { "source": "api-gateway", "target": "auth", "label": "validate admin token", "order": 1 },
+        { "source": "auth", "target": "users", "label": "create pending user", "order": 2 },
+        { "source": "users", "target": "email", "label": "send invite email", "order": 3 }
+      ]
+    },
+    {
+      "id": "login",
+      "name": "Log in",
+      "steps": [
+        { "source": "api-gateway", "target": "auth", "label": "verify credentials", "order": 1 },
+        { "source": "auth", "target": "users", "label": "load user profile", "order": 2 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "code-flow",
+  "private": true,
+  "scripts": {
+    "test": "cypress run",
+    "test:open": "cypress open"
+  },
+  "devDependencies": {
+    "cypress": "^15.15.0"
+  }
+}

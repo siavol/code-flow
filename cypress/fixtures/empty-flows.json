@@ -1,0 +1,6 @@
+{
+  "packages": [
+    { "id": "api-gateway", "name": "API Gateway", "path": "src/api-gateway" }
+  ],
+  "flows": []
+}
