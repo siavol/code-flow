@@ -17,31 +17,34 @@ describe('Navigation warning', () => {
 });
 
 describe('Package navigation', () => {
-  it('opens vscode URL to entryFile when clicking a package node with entryFile', () => {
+  it('opens vscode URL to entryFile when clicking the strip link after selecting a node with entryFile', () => {
     setup('settings-vscode.json', {
       onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
     });
     cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
+    cy.get('#info-strip-link').click();
     cy.get('@navigate').should('have.been.calledWith',
       'vscode://file//Users/me/project/src/auth/index.js'
     );
   });
 
-  it('opens vscode URL to path when clicking a package node without entryFile', () => {
+  it('opens vscode URL to path when clicking the strip link after selecting a node without entryFile', () => {
     setup('settings-vscode.json', {
       onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
     });
     cy.window().then(win => win.eval('cy').getElementById('users').emit('tap'));
+    cy.get('#info-strip-link').click();
     cy.get('@navigate').should('have.been.calledWith',
       'vscode://file//Users/me/project/src/users'
     );
   });
 
-  it('opens github tree URL when clicking a package node', () => {
+  it('opens github tree URL when clicking the strip link after selecting a node', () => {
     setup('settings-github.json', {
       onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
     });
     cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
+    cy.get('#info-strip-link').click();
     cy.get('@navigate').should('have.been.calledWith',
       'https://github.com/acme/myrepo/tree/main/src/auth'
     );
@@ -49,15 +52,15 @@ describe('Package navigation', () => {
 });
 
 describe('Step navigation', () => {
-  it('opens vscode file:line URL when clicking a visible step edge', () => {
+  it('opens vscode file:line URL when clicking the strip link after selecting a step edge', () => {
     setup('settings-vscode.json', {
       onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
     });
     cy.contains('.flow-item', 'Invite new user').click();
     cy.window().then(win => {
-      // step order 1: api-gateway→auth, location file src/api-gateway/routes/users.js line 15
       win.eval('cy').getElementById('invite-user__1').emit('tap');
     });
+    cy.get('#info-strip-link').click();
     cy.get('@navigate').should('have.been.calledWith',
       'vscode://file//Users/me/project/src/api-gateway/routes/users.js:15'
     );
@@ -68,7 +71,6 @@ describe('No-location steps', () => {
   it('applies no-location class to steps without a location', () => {
     setup('settings-vscode.json');
     cy.window().then(win => {
-      // invite-user step 3 has location: null
       expect(win.eval('cy').getElementById('invite-user__3').hasClass('no-location')).to.be.true;
     });
   });
