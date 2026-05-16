@@ -15,14 +15,14 @@
       display: flex;
       height: 100vh;
       overflow: hidden;
-      background: #f6f8fa;
+      background: #f1f5f9;
     }
 
     #sidebar {
       width: 260px;
       min-width: 200px;
       background: #ffffff;
-      border-right: 1px solid #d0d7de;
+      border-right: 1px solid #e2e8f0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -30,21 +30,19 @@
 
     #sidebar-header {
       padding: 16px;
-      border-bottom: 1px solid #d0d7de;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     #sidebar-header h1 {
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 600;
-      color: #24292f;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 2px;
+      color: #1e293b;
+      margin-bottom: 3px;
     }
 
     #flow-count {
       font-size: 12px;
-      color: #57606a;
+      color: #64748b;
     }
 
     #flow-list {
@@ -54,9 +52,9 @@
     }
 
     .flow-item {
-      padding: 7px 16px;
+      padding: 8px 16px;
       font-size: 13px;
-      color: #24292f;
+      color: #334155;
       cursor: pointer;
       border-left: 3px solid transparent;
       display: flex;
@@ -66,13 +64,13 @@
     }
 
     .flow-item:hover {
-      background: #f6f8fa;
+      background: #f8fafc;
     }
 
     .flow-item.active {
-      background: #ddf4ff;
-      border-left-color: #0969da;
-      color: #0969da;
+      background: #eef2ff;
+      border-left-color: #4f46e5;
+      color: #4338ca;
       font-weight: 500;
     }
 
@@ -80,13 +78,13 @@
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #d0d7de;
+      background: #cbd5e1;
       flex-shrink: 0;
       transition: background 0.15s;
     }
 
     .flow-item.active .flow-dot {
-      background: #0969da;
+      background: #4f46e5;
     }
 
     #main {
@@ -105,11 +103,11 @@
       bottom: 16px;
       right: 16px;
       font-size: 12px;
-      color: #57606a;
+      color: #64748b;
       background: rgba(255, 255, 255, 0.92);
       padding: 5px 10px;
       border-radius: 6px;
-      border: 1px solid #d0d7de;
+      border: 1px solid #e2e8f0;
       pointer-events: none;
       backdrop-filter: blur(4px);
     }
@@ -174,20 +172,20 @@
       left: 0;
       right: 0;
       background: #ffffff;
-      border-top: 1px solid #d0d7de;
-      padding: 8px 16px;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.07);
+      padding: 10px 20px;
       font-size: 13px;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
     }
 
     #info-strip-name {
       font-weight: 600;
-      color: #24292f;
+      color: #1e293b;
     }
 
     #info-strip-detail {
-      color: #57606a;
+      color: #64748b;
       font-family: monospace;
       font-size: 12px;
     }
@@ -195,16 +193,19 @@
     #info-strip-link {
       margin-left: auto;
       font-size: 12px;
-      color: #0969da;
+      color: #4f46e5;
       text-decoration: none;
-      padding: 3px 10px;
-      border: 1px solid #0969da;
-      border-radius: 5px;
+      padding: 4px 12px;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      background: #eef2ff;
       white-space: nowrap;
+      transition: background 0.12s, border-color 0.12s;
     }
 
     #info-strip-link:hover {
-      background: #ddf4ff;
+      background: #e0e7ff;
+      border-color: #a5b4fc;
     }
   </style>
 </head>
@@ -323,10 +324,10 @@
           selector: 'node',
           style: {
             label: 'data(label)',
-            'background-color': '#dbeafe',
-            'border-color': '#93c5fd',
-            'border-width': 2,
-            color: '#1e40af',
+            'background-color': '#ffffff',
+            'border-color': '#cbd5e1',
+            'border-width': 1.5,
+            color: '#1e293b',
             'font-size': 13,
             'font-weight': 500,
             'text-valign': 'center',
@@ -335,26 +336,26 @@
             width: 'label',
             height: 36,
             padding: '12px',
-            'transition-property': 'background-color, border-color, color, opacity',
+            'transition-property': 'background-color, border-color, border-width, color, opacity',
             'transition-duration': '0.15s'
           }
         },
         {
           selector: 'node.dimmed',
           style: {
-            'background-color': '#f3f4f6',
-            'border-color': '#e5e7eb',
-            color: '#9ca3af',
-            opacity: 0.5
+            'background-color': '#f8fafc',
+            'border-color': '#e2e8f0',
+            color: '#94a3b8',
+            opacity: 0.4
           }
         },
         {
           selector: 'node.highlighted',
           style: {
-            'background-color': '#fef3c7',
-            'border-color': '#f59e0b',
-            'border-width': 2.5,
-            color: '#78350f'
+            'background-color': '#4f46e5',
+            'border-color': '#4338ca',
+            'border-width': 2,
+            color: '#ffffff'
           }
         },
         {
@@ -363,12 +364,12 @@
             'curve-style': 'bezier',
             'target-arrow-shape': 'triangle',
             'arrow-scale': 1.2,
-            'line-color': '#f59e0b',
-            'target-arrow-color': '#f59e0b',
+            'line-color': '#6366f1',
+            'target-arrow-color': '#6366f1',
             label: 'data(label)',
             'font-size': 11,
-            color: '#78350f',
-            'text-background-color': '#fffbeb',
+            color: '#4338ca',
+            'text-background-color': '#eef2ff',
             'text-background-opacity': 1,
             'text-background-padding': '3px',
             'text-background-shape': 'roundrectangle',
@@ -400,19 +401,18 @@
         {
           selector: 'node.selected',
           style: {
-            'background-color': '#ddf4ff',
-            'border-color': '#0969da',
+            'border-color': '#0ea5e9',
             'border-width': 3,
-            color: '#0550ae'
+            opacity: 1
           }
         },
         {
           selector: 'edge.selected',
           style: {
-            'line-color': '#0969da',
-            'target-arrow-color': '#0969da',
-            color: '#0550ae',
-            'text-background-color': '#ddf4ff',
+            'line-color': '#0ea5e9',
+            'target-arrow-color': '#0ea5e9',
+            color: '#0369a1',
+            'text-background-color': '#f0f9ff',
             width: 3
           }
         }
