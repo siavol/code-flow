@@ -150,6 +150,62 @@
       font-size: 13px;
       color: #24292f;
     }
+
+    #nav-warning {
+      display: none;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #9a6700;
+      background: #fff8c5;
+      border: 1px solid #d4a72c;
+      border-radius: 6px;
+      padding: 5px 12px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #info-strip {
+      display: none;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid #d0d7de;
+      padding: 8px 16px;
+      font-size: 13px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #info-strip-name {
+      font-weight: 600;
+      color: #24292f;
+    }
+
+    #info-strip-detail {
+      color: #57606a;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    #info-strip-link {
+      margin-left: auto;
+      font-size: 12px;
+      color: #0969da;
+      text-decoration: none;
+      padding: 3px 10px;
+      border: 1px solid #0969da;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    #info-strip-link:hover {
+      background: #ddf4ff;
+    }
   </style>
 </head>
 <body>
@@ -165,6 +221,12 @@
 <div id="main">
   <div id="cy"></div>
   <div id="hint">Click a flow to highlight its path</div>
+  <div id="nav-warning">Navigation disabled — add settings.json to enable code navigation</div>
+  <div id="info-strip">
+    <span id="info-strip-name"></span>
+    <span id="info-strip-detail"></span>
+    <a id="info-strip-link" href="#">Open ↗</a>
+  </div>
   <div id="error-panel">
     <h2>Could not load flows.json</h2>
     <p>Open this folder with a local server:<br>
@@ -180,13 +242,39 @@
 
   fetch('flows.json')
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-    .then(init)
+    .then(data => {
+      return fetch('settings.json')
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+        .then(settings => init(data, settings));
+    })
     .catch(() => {
       document.getElementById('error-panel').style.display = 'block';
       document.getElementById('hint').style.display = 'none';
     });
 
-  function init(data) {
+  function buildNav(settings) {
+    if (!settings || !settings.navigation) return null;
+    const { provider } = settings.navigation;
+    const config = settings.navigation[provider];
+    if (!config) return null;
+    const providers = {
+      vscode: {
+        openPackage: (path, entryFile) => `vscode://file/${config.workspacePath}/${entryFile || path}`,
+        openStep: (file, line) => `vscode://file/${config.workspacePath}/${file}:${line}`
+      },
+      github: {
+        openPackage: (path) => `https://github.com/${config.repo}/tree/${config.branch}/${path}`,
+        openStep: (file, line) => `https://github.com/${config.repo}/blob/${config.branch}/${file}#L${line}`
+      }
+    };
+    return providers[provider] || null;
+  }
+
+  function init(data, settings) {
+    const nav = buildNav(settings);
+    if (!nav) document.getElementById('nav-warning').style.display = 'block';
+
     const { packages, flows } = data;
 
     document.getElementById('flow-count').textContent =
@@ -207,20 +295,22 @@
     const elements = [];
 
     packages.forEach(pkg => {
-      elements.push({ data: { id: pkg.id, label: pkg.name } });
+      elements.push({ data: { id: pkg.id, label: pkg.name, path: pkg.path, entryFile: pkg.entryFile || null } });
     });
 
     flows.forEach(flow => {
       flow.steps.forEach(step => {
+        const location = step.location || null;
         elements.push({
           data: {
             id: `${flow.id}__${step.order}`,
             source: step.source,
             target: step.target,
             label: `${step.order}. ${step.label}`,
-            flowId: flow.id
+            flowId: flow.id,
+            location
           },
-          classes: 'flow-edge'
+          classes: location ? 'flow-edge' : 'flow-edge no-location'
         });
       });
     });
@@ -296,6 +386,35 @@
             opacity: 1,
             events: 'yes'
           }
+        },
+        {
+          selector: 'edge.no-location.visible',
+          style: {
+            'line-color': '#94a3b8',
+            'target-arrow-color': '#94a3b8',
+            color: '#64748b',
+            'text-background-color': '#f8fafc',
+            'line-style': 'dashed'
+          }
+        },
+        {
+          selector: 'node.selected',
+          style: {
+            'background-color': '#ddf4ff',
+            'border-color': '#0969da',
+            'border-width': 3,
+            color: '#0550ae'
+          }
+        },
+        {
+          selector: 'edge.selected',
+          style: {
+            'line-color': '#0969da',
+            'target-arrow-color': '#0969da',
+            color: '#0550ae',
+            'text-background-color': '#ddf4ff',
+            width: 3
+          }
         }
       ],
       layout: {
@@ -308,6 +427,57 @@
       },
       wheelSensitivity: 0.2
     });
+
+    let selectedNodeId = null;
+    let selectedEdgeId = null;
+
+    cy.on('tap', 'node', evt => {
+      const node = evt.target;
+      if (selectedNodeId === node.id()) {
+        node.removeClass('selected');
+        hideStrip();
+        selectedNodeId = null;
+        return;
+      }
+      cy.nodes().removeClass('selected');
+      cy.edges().removeClass('selected');
+      selectedEdgeId = null;
+      node.addClass('selected');
+      selectedNodeId = node.id();
+      const url = nav ? nav.openPackage(node.data('path'), node.data('entryFile')) : null;
+      showStrip(node.data('label'), node.data('path'), url);
+    });
+
+    cy.on('tap', 'edge.visible', evt => {
+      cy.nodes().removeClass('selected');
+      cy.edges().removeClass('selected');
+      selectedNodeId = null;
+      const edge = evt.target;
+      edge.addClass('selected');
+      selectedEdgeId = edge.id();
+      const location = edge.data('location');
+      const url = (nav && location) ? nav.openStep(location.file, location.line) : null;
+      showStrip(edge.data('label'), location ? `${location.file}:${location.line}` : null, url);
+    });
+  }
+
+  function showStrip(name, detail, url) {
+    const strip = document.getElementById('info-strip');
+    document.getElementById('info-strip-name').textContent = name || '';
+    document.getElementById('info-strip-detail').textContent = detail || '';
+    const link = document.getElementById('info-strip-link');
+    if (url) {
+      link.style.display = '';
+      link.onclick = e => { e.preventDefault(); window.open(url); };
+    } else {
+      link.style.display = 'none';
+    }
+    strip.style.display = 'flex';
+  }
+
+  function hideStrip() {
+    document.getElementById('info-strip').style.display = 'none';
+    if (cy) { cy.nodes().removeClass('selected'); cy.edges().removeClass('selected'); }
   }
 
   function toggleFlow(flowId) {
