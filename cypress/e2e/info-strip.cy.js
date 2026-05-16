@@ -1,53 +1,42 @@
-const setup = (opts = {}) => {
-  cy.intercept('GET', 'flows.json', { fixture: 'basic.json' });
-  cy.intercept('GET', 'settings.json', { fixture: 'settings-vscode.json' });
-  cy.visit('index.html', opts);
-  cy.get('.flow-item').should('have.length', 2);
-};
-
-describe('Info strip', () => {
-  it('is hidden by default', () => {
-    setup();
-    cy.get('#info-strip').should('not.be.visible');
+describe('Steps panel', () => {
+  beforeEach(() => {
+    cy.intercept('GET', 'flows.json', { fixture: 'basic.json' });
+    cy.visit('index.html');
   });
 
-  it('shows with package name after clicking a node', () => {
-    setup();
-    cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
-    cy.get('#info-strip').should('be.visible');
-    cy.get('#info-strip-name').should('have.text', 'Auth');
+  it('shows empty state when no flow is selected', () => {
+    cy.get('#steps-empty').should('be.visible');
+    cy.get('.step-card').should('not.exist');
   });
 
-  it('hides after clicking the same node again', () => {
-    setup();
-    cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
-    cy.get('#info-strip').should('be.visible');
-    cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
-    cy.get('#info-strip').should('not.be.visible');
-  });
-
-  it('updates when clicking a different node', () => {
-    setup();
-    cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
-    cy.get('#info-strip-name').should('have.text', 'Auth');
-    cy.window().then(win => win.eval('cy').getElementById('email').emit('tap'));
-    cy.get('#info-strip').should('be.visible');
-    cy.get('#info-strip-name').should('have.text', 'Email');
-  });
-
-  it('shows step label after clicking a visible step edge', () => {
-    setup();
+  it('shows step cards when a flow is selected', () => {
     cy.contains('.flow-item', 'Invite new user').click();
-    cy.window().then(win => win.eval('cy').getElementById('invite-user__1').emit('tap'));
-    cy.get('#info-strip').should('be.visible');
-    cy.get('#info-strip-name').should('have.text', '1. validate admin token');
+    cy.get('.step-card').should('have.length', 3);
   });
 
-  it('shows no nav link for a no-location step', () => {
-    setup();
+  it('updates steps label count when a flow is selected', () => {
     cy.contains('.flow-item', 'Invite new user').click();
-    cy.window().then(win => win.eval('cy').getElementById('invite-user__3').emit('tap'));
-    cy.get('#info-strip').should('be.visible');
-    cy.get('#info-strip-link').should('not.be.visible');
+    cy.get('#steps-label').should('contain.text', '3');
+  });
+
+  it('first step card is active by default when flow is selected', () => {
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.get('.step-card[data-order="1"]').should('have.class', 'active');
+    cy.get('.step-card[data-order="2"]').should('not.have.class', 'active');
+  });
+
+  it('activates the matching step card when a visible edge is tapped', () => {
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.window().then(win => win.eval('cy').getElementById('invite-user__2').emit('tap'));
+    cy.get('.step-card[data-order="2"]').should('have.class', 'active');
+    cy.get('.step-card[data-order="1"]').should('not.have.class', 'active');
+  });
+
+  it('resets to empty state when the active flow is deselected', () => {
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.get('.step-card').should('have.length', 3);
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.get('#steps-empty').should('be.visible');
+    cy.get('.step-card').should('not.exist');
   });
 });
