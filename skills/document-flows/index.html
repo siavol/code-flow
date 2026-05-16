@@ -396,6 +396,25 @@
             'text-background-color': '#f8fafc',
             'line-style': 'dashed'
           }
+        },
+        {
+          selector: 'node.selected',
+          style: {
+            'background-color': '#ddf4ff',
+            'border-color': '#0969da',
+            'border-width': 3,
+            color: '#0550ae'
+          }
+        },
+        {
+          selector: 'edge.selected',
+          style: {
+            'line-color': '#0969da',
+            'target-arrow-color': '#0969da',
+            color: '#0550ae',
+            'text-background-color': '#ddf4ff',
+            width: 3
+          }
         }
       ],
       layout: {
@@ -410,22 +429,32 @@
     });
 
     let selectedNodeId = null;
+    let selectedEdgeId = null;
 
     cy.on('tap', 'node', evt => {
       const node = evt.target;
       if (selectedNodeId === node.id()) {
+        node.removeClass('selected');
         hideStrip();
         selectedNodeId = null;
         return;
       }
+      cy.nodes().removeClass('selected');
+      cy.edges().removeClass('selected');
+      selectedEdgeId = null;
+      node.addClass('selected');
       selectedNodeId = node.id();
       const url = nav ? nav.openPackage(node.data('path'), node.data('entryFile')) : null;
       showStrip(node.data('label'), node.data('path'), url);
     });
 
     cy.on('tap', 'edge.visible', evt => {
+      cy.nodes().removeClass('selected');
+      cy.edges().removeClass('selected');
       selectedNodeId = null;
       const edge = evt.target;
+      edge.addClass('selected');
+      selectedEdgeId = edge.id();
       const location = edge.data('location');
       const url = (nav && location) ? nav.openStep(location.file, location.line) : null;
       showStrip(edge.data('label'), location ? `${location.file}:${location.line}` : null, url);
@@ -448,6 +477,7 @@
 
   function hideStrip() {
     document.getElementById('info-strip').style.display = 'none';
+    if (cy) { cy.nodes().removeClass('selected'); cy.edges().removeClass('selected'); }
   }
 
   function toggleFlow(flowId) {
