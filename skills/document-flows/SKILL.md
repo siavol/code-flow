@@ -55,6 +55,12 @@ For each Flow, trace execution from the entry point through the codebase. Each t
 
 Follow function calls, imports, HTTP clients, event emits, and DB calls across Package boundaries. Multiple Steps between the same two Packages in one Flow are allowed.
 
+For each Step, record the **call site** — the exact line in the source Package where the transition originates:
+- `location.file` — path relative to the repo root (e.g. `src/auth/inviteService.js`)
+- `location.line` — 1-based line number of the outgoing call
+
+If you cannot trace a Step to a specific line, set `location` to `null`. Do not guess.
+
 A Flow must have at least 2 Packages and 1 Step to be included.
 
 ### 5. Write flows/flows.json
@@ -71,9 +77,9 @@ Create `flows/` at the repo root. Write `flows/flows.json`:
       "id": "invite-user",
       "name": "Invite new user",
       "steps": [
-        { "source": "api-gateway", "target": "auth", "label": "validate admin token", "order": 1 },
-        { "source": "auth", "target": "users", "label": "create pending user", "order": 2 },
-        { "source": "users", "target": "email", "label": "send invite email", "order": 3 }
+        { "source": "api-gateway", "target": "auth", "label": "validate admin token", "order": 1, "location": { "file": "src/api-gateway/routes/users.js", "line": 15 } },
+        { "source": "auth", "target": "users", "label": "create pending user", "order": 2, "location": { "file": "src/auth/inviteService.js", "line": 42 } },
+        { "source": "users", "target": "email", "label": "send invite email", "order": 3, "location": null }
       ]
     }
   ]
@@ -86,7 +92,30 @@ JSON is pure data — no coordinates, colors, or layout hints.
 
 Copy `index.html` from this skill's base directory to `flows/index.html`. The skill's base directory is provided in the `Base directory for this skill:` line in your context.
 
-### 7. Instruct the developer
+### 7. Write flows/settings.json
+
+Write `flows/settings.json` with the absolute path to the repo root so the developer can immediately navigate to code from the Viewer.
+
+Detect the repo root as the directory containing `.git/`. Write the absolute path using the OS path separator.
+
+```json
+{
+  "navigation": {
+    "provider": "vscode",
+    "vscode": { "workspacePath": "/absolute/path/to/repo" },
+    "github": { "repo": "owner/repo", "branch": "main" }
+  }
+}
+```
+
+- Set `vscode.workspacePath` to the detected absolute repo root
+- Set `github.repo` to `owner/repo` format if a GitHub remote is found (`git remote get-url origin`); otherwise set to `"owner/repo"` as a placeholder
+- Set `github.branch` to the current default branch if detectable; otherwise `"main"`
+- The active `provider` defaults to `"vscode"`
+
+Do not overwrite `settings.json` if it already exists — the developer may have customised it.
+
+### 8. Instruct the developer
 
 Tell the developer:
 
@@ -95,4 +124,8 @@ flows/ is ready. Open it with a local server:
   npx serve flows/
 
 Then open http://localhost:3000 in your browser.
+
+Click any package node to open it in VS Code.
+Click a step edge (when a flow is selected) to jump to the call site.
+To switch to GitHub navigation, edit flows/settings.json and set "provider": "github".
 ```
