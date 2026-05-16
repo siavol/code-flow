@@ -1,0 +1,7 @@
+{
+  "navigation": {
+    "provider": "vscode",
+    "vscode": { "workspacePath": "/Users/me/project" },
+    "github": { "repo": "acme/myrepo", "branch": "main" }
+  }
+}

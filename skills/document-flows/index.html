@@ -150,6 +150,22 @@
       font-size: 13px;
       color: #24292f;
     }
+
+    #nav-warning {
+      display: none;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #9a6700;
+      background: #fff8c5;
+      border: 1px solid #d4a72c;
+      border-radius: 6px;
+      padding: 5px 12px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -165,6 +181,7 @@
 <div id="main">
   <div id="cy"></div>
   <div id="hint">Click a flow to highlight its path</div>
+  <div id="nav-warning">Navigation disabled — add settings.json to enable code navigation</div>
   <div id="error-panel">
     <h2>Could not load flows.json</h2>
     <p>Open this folder with a local server:<br>
@@ -180,13 +197,39 @@
 
   fetch('flows.json')
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-    .then(init)
+    .then(data => {
+      return fetch('settings.json')
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+        .then(settings => init(data, settings));
+    })
     .catch(() => {
       document.getElementById('error-panel').style.display = 'block';
       document.getElementById('hint').style.display = 'none';
     });
 
-  function init(data) {
+  function buildNav(settings) {
+    if (!settings || !settings.navigation) return null;
+    const { provider } = settings.navigation;
+    const config = settings.navigation[provider];
+    if (!config) return null;
+    const providers = {
+      vscode: {
+        openPackage: path => window.open(`vscode://file/${config.workspacePath}/${path}`),
+        openStep: (file, line) => window.open(`vscode://file/${config.workspacePath}/${file}:${line}`)
+      },
+      github: {
+        openPackage: path => window.open(`https://github.com/${config.repo}/tree/${config.branch}/${path}`),
+        openStep: (file, line) => window.open(`https://github.com/${config.repo}/blob/${config.branch}/${file}#L${line}`)
+      }
+    };
+    return providers[provider] || null;
+  }
+
+  function init(data, settings) {
+    const nav = buildNav(settings);
+    if (!nav) document.getElementById('nav-warning').style.display = 'block';
+
     const { packages, flows } = data;
 
     document.getElementById('flow-count').textContent =
@@ -212,15 +255,17 @@
 
     flows.forEach(flow => {
       flow.steps.forEach(step => {
+        const location = step.location || null;
         elements.push({
           data: {
             id: `${flow.id}__${step.order}`,
             source: step.source,
             target: step.target,
             label: `${step.order}. ${step.label}`,
-            flowId: flow.id
+            flowId: flow.id,
+            location
           },
-          classes: 'flow-edge'
+          classes: location ? 'flow-edge' : 'flow-edge no-location'
         });
       });
     });
@@ -296,6 +341,16 @@
             opacity: 1,
             events: 'yes'
           }
+        },
+        {
+          selector: 'edge.no-location.visible',
+          style: {
+            'line-color': '#94a3b8',
+            'target-arrow-color': '#94a3b8',
+            color: '#64748b',
+            'text-background-color': '#f8fafc',
+            'line-style': 'dashed'
+          }
         }
       ],
       layout: {
@@ -308,6 +363,18 @@
       },
       wheelSensitivity: 0.2
     });
+
+    if (nav) {
+      cy.on('tap', 'node', evt => {
+        const pkg = packages.find(p => p.id === evt.target.id());
+        if (pkg) nav.openPackage(pkg.path);
+      });
+
+      cy.on('tap', 'edge.visible', evt => {
+        const location = evt.target.data('location');
+        if (location) nav.openStep(location.file, location.line);
+      });
+    }
   }
 
   function toggleFlow(flowId) {
