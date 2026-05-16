@@ -28,7 +28,7 @@ flows/
 The contract between the skill (writer) and the Viewer (reader). Pure data — no view information.
 
 ```json
-{ok, 
+{
   "packages": [
     { "id": "auth", "name": "Auth", "path": "src/auth" }
   ],
