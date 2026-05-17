@@ -313,15 +313,30 @@
       transition: border-color 0.1s;
     }
 
-    .step-card:hover { border-color: var(--indigo-200); }
+    .step-card:not(.de-emphasised):hover { border-color: var(--indigo-200); }
+    .step-card.expanded .step-card-body { display: block; }
 
     .step-card-header {
-      padding: 7px 12px;
-      font-size: 12px;
-      font-weight: 600;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 8px 12px;
+      font-size: 11px;
       background: #F1F5F9;
       color: #374151;
+      cursor: pointer;
+      user-select: none;
       transition: background 0.15s, color 0.15s;
+    }
+
+    .step-num { font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+
+    .step-label-inline {
+      font-weight: 400;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
     }
 
     .step-card.active .step-card-header {
@@ -329,15 +344,11 @@
       color: #FFFFFF;
     }
 
-    .step-card-body { padding: 8px 12px 10px; }
+    .step-card.highlighted { border-color: var(--indigo-600); }
+    .step-card.highlighted .step-card-header { background: #EEF2FF; color: var(--indigo-900); }
+    .step-card.de-emphasised { opacity: 0.45; pointer-events: none; }
 
-    .step-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
+    .step-card-body { display: none; padding: 8px 12px 10px; }
 
     .from-to-block { margin-bottom: 6px; }
 
@@ -384,15 +395,51 @@
 
     .step-fileref:hover { color: var(--indigo-600); }
 
-    a.step-pill {
-      text-decoration: none;
+    .step-pill[data-pkg-id] {
       cursor: pointer;
     }
 
-    a.step-pill:hover {
+    .step-pill[data-pkg-id]:hover {
       background: var(--indigo-200);
       border-color: var(--indigo-600);
     }
+
+    /* ── Node filter bar ─────────────────────────────────────────────── */
+
+    #node-filter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--bg-selected);
+      border-bottom: 1px solid var(--indigo-200);
+      font-size: 11px;
+      color: var(--indigo-900);
+      flex-shrink: 0;
+    }
+
+    #node-filter-name {
+      flex: 1;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    #node-filter-clear {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 16px;
+      line-height: 1;
+      padding: 0 2px;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+
+    #node-filter-clear:hover { color: var(--text-primary); }
 
     /* ── Service info panel ─────────────────────────────────────────── */
 
@@ -513,6 +560,10 @@
 
   <!-- Right panel -->
   <div id="steps-panel">
+    <div id="node-filter" style="display:none">
+      <span id="node-filter-name"></span>
+      <button id="node-filter-clear" aria-label="Clear node filter">×</button>
+    </div>
     <div id="steps-list">
       <div id="steps-empty">Select a flow to see steps</div>
     </div>
@@ -554,10 +605,12 @@
   const breadcrumb      = document.getElementById('breadcrumb');
   const bcParent        = document.getElementById('bc-parent');
   const bcFlow          = document.getElementById('bc-flow');
-  const stepsList       = document.getElementById('steps-list');
+  const stepsList        = document.getElementById('steps-list');
   const serviceInfoPanel = document.getElementById('service-info');
-  const sidebarLabel    = document.getElementById('sidebar-label');
-  const flowSearch      = document.getElementById('flow-search');
+  const nodeFilter       = document.getElementById('node-filter');
+  const nodeFilterName   = document.getElementById('node-filter-name');
+  const sidebarLabel     = document.getElementById('sidebar-label');
+  const flowSearch       = document.getElementById('flow-search');
 
   // ── Data loading ────────────────────────────────────────────────────────
 
@@ -836,45 +889,36 @@
       showServiceInfo(svc || { name: node.data('label'), path: '', techStack: '', description: '' });
     });
 
-    // Package node tap — show package info panel
+    // Package node tap
     cy.on('tap', 'node:childless', evt => {
-      const node = evt.target;
-      if (selectedNodeId === node.id()) {
-        node.removeClass('selected');
-        selectedNodeId = null;
-        hideServiceInfo();
-        return;
-      }
-      cy.nodes().removeClass('selected');
-      cy.edges().removeClass('selected');
-      selectedEdgeId = null;
-      node.addClass('selected');
-      selectedNodeId = node.id();
-      const pkg = allPackages.find(p => p.id === node.id());
-      showPackageInfo(pkg);
+      selectPackageNode(evt.target.id());
     });
 
-    // Edge tap — highlight step card
+    // Edge tap — expand and mark the step card
     cy.on('tap', 'edge.visible', evt => {
-      cy.nodes().removeClass('selected');
+      clearNodeFilter();
       cy.edges().removeClass('selected');
-      selectedNodeId = null;
+      selectedEdgeId = null;
       const edge = evt.target;
       edge.addClass('selected');
       selectedEdgeId = edge.id();
       setActiveStep(edge.data('order'));
     });
 
-    // Tap on background — deselect
+    // Tap on background — deselect node/edge, keep flow
     cy.on('tap', evt => {
       if (evt.target === cy) {
-        cy.nodes().removeClass('selected');
+        clearNodeFilter();
         cy.edges().removeClass('selected');
-        selectedNodeId = null;
         selectedEdgeId = null;
         hideServiceInfo();
         if (selectedFlowId) setActiveStep(null);
       }
+    });
+
+    // Node filter dismiss button
+    document.getElementById('node-filter-clear').addEventListener('click', () => {
+      clearNodeFilter();
     });
 
     // Zoom buttons
@@ -910,6 +954,8 @@
     if (selectedFlowId === flowId) { clearSelection(); return; }
 
     selectedFlowId = flowId;
+    nodeFilter.style.display = 'none';
+    selectedNodeId = null;
     hideServiceInfo();
     const flow = allFlows.find(f => f.id === flowId);
 
@@ -941,11 +987,12 @@
 
   function clearSelection() {
     selectedFlowId = null;
+    nodeFilter.style.display = 'none';
+    selectedNodeId = null;
     hideServiceInfo();
     document.querySelectorAll('.flow-item').forEach(el => el.classList.remove('active'));
     cy.nodes().removeClass('in-flow in-flow-through out-of-flow selected');
     cy.edges().removeClass('visible selected');
-    selectedNodeId = null;
     selectedEdgeId = null;
     updateBreadcrumb(null);
     renderSteps(null);
@@ -980,52 +1027,59 @@
 
     const pkgById = Object.fromEntries(allPackages.map(p => [p.id, p]));
     const pkgName = id => (pkgById[id] || { name: id }).name;
-    const pkgPill = id => {
-      const pkg = pkgById[id];
-      const url = (nav && pkg) ? nav.openPackage(pkg.path, pkg.entryFile) : null;
-      return url
-        ? `<a class="step-pill" href="${url}" target="_blank">${escHtml(pkgName(id))}</a>`
-        : `<span class="step-pill">${escHtml(pkgName(id))}</span>`;
-    };
 
-    flow.steps.forEach((step, i) => {
-      const loc    = step.location;
+    flow.steps.forEach(step => {
+      const loc     = step.location;
       const fileRef = loc ? `${loc.file}:${loc.line}` : null;
-      const url    = (nav && loc) ? nav.openStep(loc.file, loc.line) : null;
+      const fileUrl = (nav && loc) ? nav.openStep(loc.file, loc.line) : null;
 
       const card = document.createElement('div');
-      card.className    = 'step-card' + (i === 0 ? ' active' : '');
+      card.className    = 'step-card';
       card.dataset.order = step.order;
 
       const fileHtml = fileRef
         ? `<div class="step-sep"></div>
-           ${url
-             ? `<a class="step-fileref" href="${url}" target="_blank">${docIconSvg()}${escHtml(fileRef)}</a>`
+           ${fileUrl
+             ? `<a class="step-fileref" href="${fileUrl}" target="_blank">${docIconSvg()}${escHtml(fileRef)}</a>`
              : `<span class="step-fileref">${docIconSvg()}${escHtml(fileRef)}</span>`}`
         : '';
 
       card.innerHTML = `
-        <div class="step-card-header">Step ${step.order}</div>
+        <div class="step-card-header">
+          <span class="step-num">Step ${step.order}</span>
+          <span class="step-label-inline">${escHtml(step.label)}</span>
+        </div>
         <div class="step-card-body">
-          <div class="step-label">${escHtml(step.label)}</div>
           <div class="from-to-block">
             <div class="from-to-key">From</div>
-            ${pkgPill(step.source)}
+            <span class="step-pill" data-pkg-id="${escHtml(step.source)}">${escHtml(pkgName(step.source))}</span>
           </div>
           <div class="from-to-block">
             <div class="from-to-key">To</div>
-            ${pkgPill(step.target)}
+            <span class="step-pill" data-pkg-id="${escHtml(step.target)}">${escHtml(pkgName(step.target))}</span>
           </div>
           ${fileHtml}
         </div>`;
 
       card.addEventListener('click', e => {
-        // Don't re-fire if user clicked a link inside
+        if (e.target.closest('.step-pill')) return;
         if (e.target.closest('a')) return;
+        card.classList.toggle('expanded');
         if (!cy) return;
         cy.edges().removeClass('selected');
-        cy.getElementById(`${flow.id}__${step.order}`).addClass('selected');
-        setActiveStep(step.order);
+        selectedEdgeId = null;
+        const edge = cy.getElementById(`${flow.id}__${step.order}`);
+        edge.addClass('selected');
+        selectedEdgeId = edge.id();
+        document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      });
+
+      card.querySelectorAll('.step-pill').forEach(pill => {
+        pill.addEventListener('click', e => {
+          e.stopPropagation();
+          selectPackageNode(pill.dataset.pkgId);
+        });
       });
 
       stepsList.appendChild(card);
@@ -1034,7 +1088,54 @@
 
   function setActiveStep(order) {
     document.querySelectorAll('.step-card').forEach(card => {
-      card.classList.toggle('active', order !== null && Number(card.dataset.order) === order);
+      const isActive = order !== null && Number(card.dataset.order) === order;
+      card.classList.toggle('active', isActive);
+      if (isActive) card.classList.add('expanded');
+    });
+  }
+
+  // ── Node filter ─────────────────────────────────────────────────────────
+
+  function selectPackageNode(pkgId) {
+    if (selectedNodeId === pkgId) {
+      clearNodeFilter();
+      hideServiceInfo();
+      return;
+    }
+    cy.nodes().removeClass('selected');
+    cy.edges().removeClass('selected');
+    selectedEdgeId = null;
+    selectedNodeId = pkgId;
+    cy.getElementById(pkgId).addClass('selected');
+    const pkg = allPackages.find(p => p.id === pkgId);
+    showPackageInfo(pkg);
+  }
+
+  function showNodeFilter(pkg, flow) {
+    document.querySelectorAll('.step-card').forEach(card => {
+      card.classList.remove('highlighted', 'de-emphasised', 'expanded', 'active');
+    });
+    nodeFilter.style.display = 'flex';
+    nodeFilterName.textContent = `Node: ${pkg.name}`;
+    flow.steps.forEach(step => {
+      const card = stepsList.querySelector(`.step-card[data-order="${step.order}"]`);
+      if (!card) return;
+      if (step.source === pkg.id || step.target === pkg.id) {
+        card.classList.add('highlighted', 'expanded');
+      } else {
+        card.classList.add('de-emphasised');
+      }
+    });
+    serviceInfoPanel.style.display = 'none';
+    stepsList.style.display = '';
+  }
+
+  function clearNodeFilter() {
+    nodeFilter.style.display = 'none';
+    cy.nodes().removeClass('selected');
+    selectedNodeId = null;
+    document.querySelectorAll('.step-card').forEach(card => {
+      card.classList.remove('highlighted', 'de-emphasised', 'expanded', 'active');
     });
   }
 
@@ -1065,6 +1166,13 @@
   }
 
   function showPackageInfo(pkg) {
+    if (selectedFlowId && pkg) {
+      const flow = allFlows.find(f => f.id === selectedFlowId);
+      if (flow.steps.some(s => s.source === pkg.id || s.target === pkg.id)) {
+        showNodeFilter(pkg, flow);
+        return;
+      }
+    }
     serviceInfoPanel.innerHTML = '';
 
     const name = document.createElement('div');

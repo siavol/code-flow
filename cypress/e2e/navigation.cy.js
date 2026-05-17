@@ -72,29 +72,24 @@ describe('Step navigation', () => {
   });
 });
 
-describe('Step pill navigation', () => {
-  it('From pill links to the source package entryFile in vscode', () => {
+describe('Step pill canvas interaction', () => {
+  it('clicking a From pill selects the source node on the canvas', () => {
     setup('settings-vscode.json');
     cy.contains('.flow-item', 'Invite new user').click();
-    // step 1 source: api-gateway (has entryFile src/api-gateway/index.js)
-    cy.get('.step-card[data-order="1"] a.step-pill').eq(0)
-      .should('have.attr', 'href', 'vscode://file//Users/me/project/src/api-gateway/index.js');
+    cy.get('.step-card[data-order="1"]').click(); // expand
+    cy.get('.step-card[data-order="1"] .step-pill').first().click();
+    cy.window().then(win => {
+      expect(win.eval('cy').getElementById('api-gateway').hasClass('selected')).to.be.true;
+    });
   });
 
-  it('To pill links to the target package path when no entryFile', () => {
+  it('clicking a pill while a flow is active shows the node filter bar', () => {
     setup('settings-vscode.json');
     cy.contains('.flow-item', 'Invite new user').click();
-    // step 2 target: users (no entryFile, falls back to path src/users)
-    cy.get('.step-card[data-order="2"] a.step-pill').eq(1)
-      .should('have.attr', 'href', 'vscode://file//Users/me/project/src/users');
-  });
-
-  it('pills are plain spans when settings.json is missing', () => {
-    setup(null);
-    cy.contains('.flow-item', 'Invite new user').click();
-    cy.get('.step-card[data-order="1"] .step-pill').first()
-      .should('match', 'span')
-      .should('not.have.attr', 'href');
+    cy.get('.step-card[data-order="1"]').click();
+    cy.get('.step-card[data-order="1"] .step-pill').first().click();
+    cy.get('#node-filter').should('be.visible');
+    cy.get('#node-filter-name').should('contain.text', 'API Gateway');
   });
 });
 
