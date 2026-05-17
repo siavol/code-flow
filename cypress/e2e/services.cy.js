@@ -32,6 +32,35 @@ describe('Service compound nodes', () => {
   });
 });
 
+describe('Service node dimming', () => {
+  beforeEach(() => setup());
+
+  it('does not dim a service whose packages are in the selected flow', () => {
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.window().then(win => {
+      const cy = win.eval('cy');
+      expect(cy.getElementById('backend').hasClass('out-of-flow')).to.be.false;
+      expect(cy.getElementById('notifications').hasClass('out-of-flow')).to.be.false;
+    });
+  });
+
+  it('dims a service whose packages are not in the selected flow', () => {
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.window().then(win => {
+      expect(win.eval('cy').getElementById('shared').hasClass('out-of-flow')).to.be.true;
+    });
+  });
+
+  it('dims a service when only the other service packages are in the flow', () => {
+    cy.contains('.flow-item', 'Log in').click();
+    cy.window().then(win => {
+      const cy = win.eval('cy');
+      expect(cy.getElementById('backend').hasClass('out-of-flow')).to.be.false;
+      expect(cy.getElementById('notifications').hasClass('out-of-flow')).to.be.true;
+    });
+  });
+});
+
 describe('Cross-service edges', () => {
   beforeEach(() => setup());
 

@@ -17,34 +17,49 @@ describe('Navigation warning', () => {
 });
 
 describe('Package navigation', () => {
-  it('opens vscode URL to entryFile when tapping a node with entryFile', () => {
-    setup('settings-vscode.json', {
-      onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
-    });
+  it('shows package info panel when a node is tapped', () => {
+    setup('settings-vscode.json');
     cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
-    cy.get('@navigate').should('have.been.calledWith',
+    cy.get('#service-info').should('be.visible');
+  });
+
+  it('panel link has vscode URL to entryFile for a node with entryFile', () => {
+    setup('settings-vscode.json');
+    cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
+    cy.get('#service-info a').should('have.attr', 'href',
       'vscode://file//Users/me/project/src/auth/index.js'
     );
   });
 
-  it('opens vscode URL to path when tapping a node without entryFile', () => {
-    setup('settings-vscode.json', {
-      onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
-    });
+  it('panel link has vscode URL to path for a node without entryFile', () => {
+    setup('settings-vscode.json');
     cy.window().then(win => win.eval('cy').getElementById('users').emit('tap'));
-    cy.get('@navigate').should('have.been.calledWith',
+    cy.get('#service-info a').should('have.attr', 'href',
       'vscode://file//Users/me/project/src/users'
     );
   });
 
-  it('opens github tree URL when tapping a node', () => {
-    setup('settings-github.json', {
+  it('panel link has github URL when provider is github', () => {
+    setup('settings-github.json');
+    cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
+    cy.get('#service-info a').should('have.attr', 'href',
+      'https://github.com/acme/myrepo/tree/main/src/auth'
+    );
+  });
+
+  it('does not navigate immediately when a node is tapped', () => {
+    setup('settings-vscode.json', {
       onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
     });
     cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
-    cy.get('@navigate').should('have.been.calledWith',
-      'https://github.com/acme/myrepo/tree/main/src/auth'
-    );
+    cy.get('@navigate').should('not.have.been.called');
+  });
+
+  it('shows no link in panel when settings.json is missing', () => {
+    setup(null);
+    cy.window().then(win => win.eval('cy').getElementById('auth').emit('tap'));
+    cy.get('#service-info').should('be.visible');
+    cy.get('#service-info a').should('not.exist');
   });
 });
 
@@ -65,7 +80,7 @@ describe('No-location steps', () => {
     });
   });
 
-  it('does not navigate when clicking a no-location step', () => {
+  it('does not navigate when clicking a no-location step edge', () => {
     setup('settings-vscode.json', {
       onBeforeLoad(win) { cy.stub(win, 'open').as('navigate'); }
     });

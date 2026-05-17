@@ -157,3 +157,9 @@ _Avoid_: source, reference, pointer
 - "component" was used to mean **Package** — resolved: Package is the only node type
 - "workflow" was used to mean **Flow** — resolved: Flow is the canonical term
 - "connection" was used to mean **Step** — resolved: Step is the canonical term
+
+## Visual design
+
+The Viewer's color palette and component-level color rules are documented in [`color-schema.md`](../color-schema.md).
+
+That file is the source of truth for all color decisions in the Viewer — node fills, edge strokes, step card states, flow list states, and service tag styles. When changing Viewer appearance, update `color-schema.md` in the same change.
