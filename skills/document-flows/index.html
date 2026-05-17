@@ -395,6 +395,16 @@
 
     .step-fileref:hover { color: var(--indigo-600); }
 
+    a.step-pill {
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    a.step-pill:hover {
+      background: var(--indigo-200);
+      border-color: var(--indigo-600);
+    }
+
     /* ── Service info panel ─────────────────────────────────────────── */
 
     #service-info {
@@ -984,7 +994,15 @@
 
     stepsLabel.textContent = `Steps · ${flow.steps.length}`;
 
-    const pkgName = id => (allPackages.find(p => p.id === id) || { name: id }).name;
+    const pkgById = Object.fromEntries(allPackages.map(p => [p.id, p]));
+    const pkgName = id => (pkgById[id] || { name: id }).name;
+    const pkgPill = id => {
+      const pkg = pkgById[id];
+      const url = (nav && pkg) ? nav.openPackage(pkg.path, pkg.entryFile) : null;
+      return url
+        ? `<a class="step-pill" href="${url}" target="_blank">${escHtml(pkgName(id))}</a>`
+        : `<span class="step-pill">${escHtml(pkgName(id))}</span>`;
+    };
 
     flow.steps.forEach((step, i) => {
       const loc    = step.location;
@@ -1008,11 +1026,11 @@
           <div class="step-label">${escHtml(step.label)}</div>
           <div class="from-to-block">
             <div class="from-to-key">From</div>
-            <span class="step-pill">${escHtml(pkgName(step.source))}</span>
+            ${pkgPill(step.source)}
           </div>
           <div class="from-to-block">
             <div class="from-to-key">To</div>
-            <span class="step-pill">${escHtml(pkgName(step.target))}</span>
+            ${pkgPill(step.target)}
           </div>
           ${fileHtml}
         </div>`;

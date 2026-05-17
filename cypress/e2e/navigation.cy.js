@@ -72,6 +72,32 @@ describe('Step navigation', () => {
   });
 });
 
+describe('Step pill navigation', () => {
+  it('From pill links to the source package entryFile in vscode', () => {
+    setup('settings-vscode.json');
+    cy.contains('.flow-item', 'Invite new user').click();
+    // step 1 source: api-gateway (has entryFile src/api-gateway/index.js)
+    cy.get('.step-card[data-order="1"] a.step-pill').eq(0)
+      .should('have.attr', 'href', 'vscode://file//Users/me/project/src/api-gateway/index.js');
+  });
+
+  it('To pill links to the target package path when no entryFile', () => {
+    setup('settings-vscode.json');
+    cy.contains('.flow-item', 'Invite new user').click();
+    // step 2 target: users (no entryFile, falls back to path src/users)
+    cy.get('.step-card[data-order="2"] a.step-pill').eq(1)
+      .should('have.attr', 'href', 'vscode://file//Users/me/project/src/users');
+  });
+
+  it('pills are plain spans when settings.json is missing', () => {
+    setup(null);
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.get('.step-card[data-order="1"] .step-pill').first()
+      .should('match', 'span')
+      .should('not.have.attr', 'href');
+  });
+});
+
 describe('No-location steps', () => {
   it('applies no-location class to steps without a location', () => {
     setup('settings-vscode.json');
