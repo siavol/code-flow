@@ -387,6 +387,41 @@
 
     .step-fileref:hover { color: var(--purple-600); }
 
+    /* ── Service info panel ─────────────────────────────────────────── */
+
+    #service-info {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+    }
+
+    #service-info-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .service-field {
+      margin-bottom: 10px;
+    }
+
+    .service-field-key {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 3px;
+    }
+
+    .service-field-value {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
     /* ── Legend ──────────────────────────────────────────────────────── */
 
     #legend {
@@ -475,6 +510,9 @@
     <div id="steps-list">
       <div id="steps-empty">Select a flow to see steps</div>
     </div>
+    <div id="service-info" style="display:none">
+      <div id="service-info-name"></div>
+    </div>
     <div id="legend">
       <div id="legend-title">Legend</div>
       <div class="legend-row">
@@ -504,14 +542,17 @@
   let selectedEdgeId  = null;
   let allFlows    = [];
   let allPackages = [];
+  let allServices = [];
+  let serviceById = {};
 
-  const breadcrumb   = document.getElementById('breadcrumb');
-  const bcParent     = document.getElementById('bc-parent');
-  const bcFlow       = document.getElementById('bc-flow');
-  const stepsLabel   = document.getElementById('steps-label');
-  const stepsList    = document.getElementById('steps-list');
-  const sidebarLabel = document.getElementById('sidebar-label');
-  const flowSearch   = document.getElementById('flow-search');
+  const breadcrumb      = document.getElementById('breadcrumb');
+  const bcParent        = document.getElementById('bc-parent');
+  const bcFlow          = document.getElementById('bc-flow');
+  const stepsLabel      = document.getElementById('steps-label');
+  const stepsList       = document.getElementById('steps-list');
+  const serviceInfoPanel = document.getElementById('service-info');
+  const sidebarLabel    = document.getElementById('sidebar-label');
+  const flowSearch      = document.getElementById('flow-search');
 
   // ── Data loading ────────────────────────────────────────────────────────
 
@@ -556,6 +597,9 @@
 
     allPackages = data.packages;
     allFlows    = data.flows;
+    allServices = data.services || [];
+    serviceById = Object.fromEntries(allServices.map(s => [s.id, s]));
+    const hasServices = allServices.length > 0;
 
     sidebarLabel.textContent = `Flows · ${allFlows.length}`;
     // Hidden element kept for test backward-compat
@@ -581,12 +625,33 @@
     // Cytoscape elements
     const elements = [];
 
+    // Service compound nodes
+    const hasShared = hasServices && allPackages.some(p => p.serviceId == null);
+    allServices.forEach(svc => {
+      elements.push({ data: { id: svc.id, label: svc.name } });
+    });
+    if (hasShared) {
+      elements.push({ data: { id: 'shared', label: 'Shared' } });
+    }
+
+    // Package lookup for cross-service detection
+    const pkgServiceId = Object.fromEntries(allPackages.map(p => [p.id, p.serviceId]));
+
     allPackages.forEach(pkg => {
-      elements.push({ data: { id: pkg.id, label: pkg.name, path: pkg.path, entryFile: pkg.entryFile || null } });
+      const parent = hasServices
+        ? (pkg.serviceId != null ? pkg.serviceId : 'shared')
+        : undefined;
+      elements.push({ data: { id: pkg.id, label: pkg.name, path: pkg.path, entryFile: pkg.entryFile || null, parent } });
     });
 
     allFlows.forEach(flow => {
       flow.steps.forEach(step => {
+        const srcSvc = pkgServiceId[step.source];
+        const tgtSvc = pkgServiceId[step.target];
+        const isCrossService = hasServices && srcSvc !== tgtSvc;
+        const classes = ['flow-edge'];
+        if (!step.location) classes.push('no-location');
+        if (isCrossService) classes.push('cross-service');
         elements.push({
           data: {
             id:       `${flow.id}__${step.order}`,
@@ -597,7 +662,7 @@
             order:    step.order,
             location: step.location || null
           },
-          classes: step.location ? 'flow-edge' : 'flow-edge no-location'
+          classes: classes.join(' ')
         });
       });
     });
@@ -606,6 +671,22 @@
       container: document.getElementById('cy'),
       elements,
       style: [
+        {
+          selector: ':parent',
+          style: {
+            label:                'data(label)',
+            'background-color':   'rgba(244, 243, 252, 0.6)',
+            'border-color':       '#AFA9EC',
+            'border-width':       1.5,
+            'text-valign':        'top',
+            'text-halign':        'center',
+            'font-size':          11,
+            'font-weight':        600,
+            color:                '#6F6F80',
+            padding:              '24px',
+            shape:                'round-rectangle'
+          }
+        },
         {
           selector: 'node',
           style: {
@@ -699,6 +780,13 @@
           }
         },
         {
+          selector: 'edge.cross-service.visible',
+          style: {
+            'line-style':         'dashed',
+            'line-dash-pattern':  [8, 4]
+          }
+        },
+        {
           selector: 'edge.selected',
           style: {
             'line-color':         '#3C3489',
@@ -718,8 +806,20 @@
       wheelSensitivity: 0.2
     });
 
-    // Node tap — toggle selected, navigate directly on first click
-    cy.on('tap', 'node', evt => {
+    // Service compound node tap — show service info panel
+    cy.on('tap', 'node:parent', evt => {
+      const node = evt.target;
+      cy.nodes().removeClass('selected');
+      cy.edges().removeClass('selected');
+      selectedNodeId = null;
+      selectedEdgeId = null;
+      node.addClass('selected');
+      const svc = serviceById[node.id()];
+      showServiceInfo(svc || { name: node.data('label'), path: '', techStack: '', description: '' });
+    });
+
+    // Package node tap — toggle selected, navigate
+    cy.on('tap', 'node:childless', evt => {
       const node = evt.target;
       if (selectedNodeId === node.id()) {
         node.removeClass('selected');
@@ -731,6 +831,7 @@
       selectedEdgeId = null;
       node.addClass('selected');
       selectedNodeId = node.id();
+      hideServiceInfo();
       const url = nav ? nav.openPackage(node.data('path'), node.data('entryFile')) : null;
       if (url) window.open(url);
     });
@@ -753,6 +854,7 @@
         cy.edges().removeClass('selected');
         selectedNodeId = null;
         selectedEdgeId = null;
+        hideServiceInfo();
         if (selectedFlowId) setActiveStep(null);
       }
     });
@@ -790,6 +892,7 @@
     if (selectedFlowId === flowId) { clearSelection(); return; }
 
     selectedFlowId = flowId;
+    hideServiceInfo();
     const flow = allFlows.find(f => f.id === flowId);
 
     document.querySelectorAll('.flow-item').forEach(el =>
@@ -813,6 +916,7 @@
 
   function clearSelection() {
     selectedFlowId = null;
+    hideServiceInfo();
     document.querySelectorAll('.flow-item').forEach(el => el.classList.remove('active'));
     cy.nodes().removeClass('in-flow in-flow-through out-of-flow selected');
     cy.edges().removeClass('visible selected');
@@ -902,6 +1006,37 @@
     document.querySelectorAll('.step-card').forEach(card => {
       card.classList.toggle('active', order !== null && Number(card.dataset.order) === order);
     });
+  }
+
+  // ── Service info panel ──────────────────────────────────────────────────
+
+  function showServiceInfo(svc) {
+    serviceInfoPanel.innerHTML = '';
+
+    const name = document.createElement('div');
+    name.id = 'service-info-name';
+    name.textContent = svc.name || '';
+    serviceInfoPanel.appendChild(name);
+
+    [
+      { key: 'Path', value: svc.path },
+      { key: 'Tech stack', value: svc.techStack },
+      { key: 'Description', value: svc.description }
+    ].forEach(({ key, value }) => {
+      if (!value) return;
+      const field = document.createElement('div');
+      field.className = 'service-field';
+      field.innerHTML = `<div class="service-field-key">${escHtml(key)}</div><div class="service-field-value">${escHtml(value)}</div>`;
+      serviceInfoPanel.appendChild(field);
+    });
+
+    serviceInfoPanel.style.display = 'block';
+    stepsList.style.display = 'none';
+  }
+
+  function hideServiceInfo() {
+    serviceInfoPanel.style.display = 'none';
+    stepsList.style.display = '';
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────

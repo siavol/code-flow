@@ -1,0 +1,32 @@
+{
+  "services": [
+    { "id": "backend", "name": "Backend", "path": "services/backend", "techStack": "Node.js", "description": "Handles API requests and business logic" },
+    { "id": "notifications", "name": "Notifications", "path": "services/notifications", "techStack": "Node.js", "description": "Sends emails and push notifications" }
+  ],
+  "packages": [
+    { "id": "api-gateway", "name": "API Gateway", "path": "services/backend/src/api-gateway", "entryFile": "services/backend/src/api-gateway/index.js", "serviceId": "backend" },
+    { "id": "auth", "name": "Auth", "path": "services/backend/src/auth", "entryFile": "services/backend/src/auth/index.js", "serviceId": "backend" },
+    { "id": "users", "name": "Users", "path": "services/backend/src/users", "entryFile": null, "serviceId": "backend" },
+    { "id": "email", "name": "Email", "path": "services/notifications/src/email", "entryFile": "services/notifications/src/email/mailer.js", "serviceId": "notifications" },
+    { "id": "utils", "name": "Utils", "path": "shared/utils", "entryFile": null, "serviceId": null }
+  ],
+  "flows": [
+    {
+      "id": "invite-user",
+      "name": "Invite new user",
+      "steps": [
+        { "source": "api-gateway", "target": "auth", "label": "validate admin token", "order": 1, "location": { "file": "services/backend/src/api-gateway/routes/users.js", "line": 15 } },
+        { "source": "auth", "target": "users", "label": "create pending user", "order": 2, "location": { "file": "services/backend/src/auth/inviteService.js", "line": 42 } },
+        { "source": "users", "target": "email", "label": "send invite email", "order": 3, "location": null }
+      ]
+    },
+    {
+      "id": "login",
+      "name": "Log in",
+      "steps": [
+        { "source": "api-gateway", "target": "auth", "label": "verify credentials", "order": 1 },
+        { "source": "auth", "target": "users", "label": "load user profile", "order": 2 }
+      ]
+    }
+  ]
+}
