@@ -8,44 +8,163 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
   <style>
+    :root {
+      --purple-50:  #EEEDFE;
+      --purple-200: #AFA9EC;
+      --purple-400: #7F77DD;
+      --purple-600: #534AB7;
+      --purple-800: #3C3489;
+      --purple-900: #26215C;
+      --gray-border: #E0E0E7;
+      --bg-canvas:  #F4F3FC;
+      --bg-panel:   #FFFFFF;
+      --text-primary:   #1A1A1E;
+      --text-secondary: #6F6F80;
+      --text-tertiary:  #A0A0AF;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       display: flex;
+      flex-direction: column;
       height: 100vh;
       overflow: hidden;
-      background: #f6f8fa;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
     }
 
+    /* ── Top Bar ─────────────────────────────────────────────────────── */
+
+    #top-bar {
+      height: 48px;
+      min-height: 48px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--gray-border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    #logo-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    #top-bar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--gray-border);
+      flex-shrink: 0;
+    }
+
+    #breadcrumb {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    #bc-parent { color: var(--text-tertiary); white-space: nowrap; }
+    #bc-chevron { color: var(--text-tertiary); flex-shrink: 0; }
+    #bc-flow {
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #zoom-controls {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .zoom-btn {
+      height: 28px;
+      min-width: 28px;
+      padding: 0 8px;
+      background: var(--bg-panel);
+      border: 1px solid var(--gray-border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.1s;
+    }
+
+    .zoom-btn:hover { background: var(--purple-50); border-color: var(--purple-200); }
+
+    /* ── Content wrapper ─────────────────────────────────────────────── */
+
+    #content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Left panel ──────────────────────────────────────────────────── */
+
     #sidebar {
-      width: 260px;
-      min-width: 200px;
-      background: #ffffff;
-      border-right: 1px solid #d0d7de;
+      width: 220px;
+      min-width: 220px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--gray-border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    #sidebar-header {
-      padding: 16px;
-      border-bottom: 1px solid #d0d7de;
-    }
-
-    #sidebar-header h1 {
-      font-size: 13px;
+    #sidebar-label {
+      padding: 14px 16px 10px;
+      font-size: 10px;
       font-weight: 600;
-      color: #24292f;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 2px;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--gray-border);
     }
 
-    #flow-count {
-      font-size: 12px;
-      color: #57606a;
+    #search-wrap {
+      position: relative;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--gray-border);
     }
+
+    #search-wrap svg {
+      position: absolute;
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--text-tertiary);
+    }
+
+    #flow-search {
+      width: 100%;
+      padding: 6px 8px 6px 28px;
+      font-size: 12px;
+      color: var(--text-primary);
+      background: var(--bg-panel);
+      border: 1px solid var(--gray-border);
+      border-radius: 6px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    #flow-search::placeholder { color: var(--text-tertiary); }
+    #flow-search:focus { border-color: var(--purple-400); }
 
     #flow-list {
       flex: 1;
@@ -54,40 +173,33 @@
     }
 
     .flow-item {
-      padding: 7px 16px;
-      font-size: 13px;
-      color: #24292f;
+      margin: 2px 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
       cursor: pointer;
-      border-left: 3px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 8px;
       line-height: 1.4;
     }
 
-    .flow-item:hover {
-      background: #f6f8fa;
-    }
+    .flow-item:hover { background: #F7F7FD; }
+    .flow-item.active { background: var(--purple-50); }
 
-    .flow-item.active {
-      background: #ddf4ff;
-      border-left-color: #0969da;
-      color: #0969da;
+    .flow-name {
+      font-size: 13px;
       font-weight: 500;
+      color: var(--text-primary);
     }
 
-    .flow-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #d0d7de;
-      flex-shrink: 0;
-      transition: background 0.15s;
+    .flow-item.active .flow-name { color: var(--purple-900); }
+
+    .flow-meta {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
     }
 
-    .flow-item.active .flow-dot {
-      background: #0969da;
-    }
+    .flow-item.active .flow-meta { color: var(--purple-400); }
+
+    /* ── Canvas ──────────────────────────────────────────────────────── */
 
     #main {
       flex: 1;
@@ -98,57 +210,23 @@
     #cy {
       width: 100%;
       height: 100%;
+      background: var(--bg-canvas);
     }
 
     #hint {
       position: absolute;
       bottom: 16px;
-      right: 16px;
+      left: 50%;
+      transform: translateX(-50%);
       font-size: 12px;
-      color: #57606a;
-      background: rgba(255, 255, 255, 0.92);
-      padding: 5px 10px;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.9);
+      padding: 5px 12px;
       border-radius: 6px;
-      border: 1px solid #d0d7de;
+      border: 1px solid var(--gray-border);
       pointer-events: none;
       backdrop-filter: blur(4px);
-    }
-
-    #error-panel {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      background: #fff;
-      border: 1px solid #d0d7de;
-      border-radius: 8px;
-      padding: 32px 40px;
-    }
-
-    #error-panel h2 {
-      font-size: 15px;
-      color: #cf222e;
-      margin-bottom: 10px;
-    }
-
-    #error-panel p {
-      font-size: 13px;
-      color: #57606a;
-      line-height: 1.6;
-    }
-
-    #error-panel code {
-      display: inline-block;
-      margin-top: 8px;
-      background: #f6f8fa;
-      border: 1px solid #d0d7de;
-      border-radius: 4px;
-      padding: 4px 10px;
-      font-family: monospace;
-      font-size: 13px;
-      color: #24292f;
+      white-space: nowrap;
     }
 
     #nav-warning {
@@ -167,91 +245,290 @@
       white-space: nowrap;
     }
 
-    #info-strip {
+    #error-panel {
       display: none;
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #ffffff;
-      border-top: 1px solid #d0d7de;
-      padding: 8px 16px;
-      font-size: 13px;
-      align-items: center;
-      gap: 12px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background: var(--bg-panel);
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 32px 40px;
     }
 
-    #info-strip-name {
-      font-weight: 600;
-      color: #24292f;
-    }
-
-    #info-strip-detail {
-      color: #57606a;
+    #error-panel h2 { font-size: 15px; color: #cf222e; margin-bottom: 10px; }
+    #error-panel p  { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    #error-panel code {
+      display: inline-block;
+      margin-top: 8px;
+      background: #f6f8fa;
+      border: 1px solid var(--gray-border);
+      border-radius: 4px;
+      padding: 4px 10px;
       font-family: monospace;
-      font-size: 12px;
+      font-size: 13px;
     }
 
-    #info-strip-link {
-      margin-left: auto;
+    /* ── Right panel — steps ─────────────────────────────────────────── */
+
+    #steps-panel {
+      width: 220px;
+      min-width: 220px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--gray-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #steps-label {
+      padding: 14px 16px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--gray-border);
+      flex-shrink: 0;
+    }
+
+    #steps-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+    }
+
+    #steps-empty {
+      padding: 24px 16px;
       font-size: 12px;
-      color: #0969da;
-      text-decoration: none;
-      padding: 3px 10px;
-      border: 1px solid #0969da;
-      border-radius: 5px;
+      color: var(--text-tertiary);
+      text-align: center;
+    }
+
+    .step-card {
+      margin: 4px 8px;
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.1s;
+    }
+
+    .step-card:hover { border-color: var(--purple-200); }
+
+    .step-card-header {
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--purple-50);
+      color: var(--purple-600);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .step-card.active .step-card-header {
+      background: var(--purple-600);
+      color: var(--purple-50);
+    }
+
+    .step-card-body { padding: 8px 12px 10px; }
+
+    .step-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .from-to-block { margin-bottom: 6px; }
+
+    .from-to-key {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 3px;
+    }
+
+    .step-pill {
+      display: inline-block;
+      background: var(--purple-50);
+      border: 1px solid var(--purple-200);
+      color: var(--purple-600);
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 10px;
+      padding: 2px 8px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
+      vertical-align: middle;
     }
 
-    #info-strip-link:hover {
-      background: #ddf4ff;
+    .step-sep {
+      height: 1px;
+      background: var(--gray-border);
+      margin: 8px 0;
+    }
+
+    .step-fileref {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    .step-fileref:hover { color: var(--purple-600); }
+
+    /* ── Legend ──────────────────────────────────────────────────────── */
+
+    #legend {
+      padding: 12px 16px;
+      border-top: 1px solid var(--gray-border);
+      flex-shrink: 0;
+    }
+
+    #legend-title {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
 
-<div id="sidebar">
-  <div id="sidebar-header">
-    <h1>Flows</h1>
-    <span id="flow-count"></span>
+<!-- ── Top Bar ──────────────────────────────────────────────────────────── -->
+<div id="top-bar">
+  <span id="logo-text">Code Flow</span>
+  <div id="top-bar-sep"></div>
+  <div id="breadcrumb">
+    <span id="bc-parent"></span>
+    <span id="bc-chevron">›</span>
+    <span id="bc-flow"></span>
   </div>
-  <div id="flow-list"></div>
+  <div id="zoom-controls">
+    <button class="zoom-btn" id="btn-fit" style="width:44px">Fit</button>
+    <button class="zoom-btn" id="btn-zoom-out">−</button>
+    <button class="zoom-btn" id="btn-zoom-reset" style="width:44px">100%</button>
+    <button class="zoom-btn" id="btn-zoom-in">+</button>
+  </div>
 </div>
 
-<div id="main">
-  <div id="cy"></div>
-  <div id="hint">Click a flow to highlight its path</div>
-  <div id="nav-warning">Navigation disabled — add settings.json to enable code navigation</div>
-  <div id="info-strip">
-    <span id="info-strip-name"></span>
-    <span id="info-strip-detail"></span>
-    <a id="info-strip-link" href="#">Open ↗</a>
+<!-- ── Content ───────────────────────────────────────────────────────────── -->
+<div id="content">
+
+  <!-- Left panel -->
+  <div id="sidebar">
+    <div id="sidebar-label">Flows · 0</div>
+    <div id="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.3"/>
+        <line x1="7.7" y1="7.7" x2="11" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      <input id="flow-search" type="text" placeholder="Search flows…" autocomplete="off"/>
+    </div>
+    <div id="flow-list"></div>
+    <!-- hidden: keeps backward-compat with tests that assert #flow-count text -->
+    <span id="flow-count" style="display:none"></span>
   </div>
-  <div id="error-panel">
-    <h2>Could not load flows.json</h2>
-    <p>Open this folder with a local server:<br>
-    <code>npx serve .</code></p>
+
+  <!-- Canvas -->
+  <div id="main">
+    <div id="cy"></div>
+    <div id="hint">Click a flow to highlight its path</div>
+    <div id="nav-warning">Navigation disabled — add settings.json to enable code links</div>
+    <div id="error-panel">
+      <h2>Could not load flows.json</h2>
+      <p>Open this folder with a local server:<br><code>npx serve .</code></p>
+    </div>
   </div>
+
+  <!-- Right panel -->
+  <div id="steps-panel">
+    <div id="steps-label">Steps · 0</div>
+    <div id="steps-list">
+      <div id="steps-empty">Select a flow to see steps</div>
+    </div>
+    <div id="legend">
+      <div id="legend-title">Legend</div>
+      <div class="legend-row">
+        <div class="legend-swatch" style="background:var(--purple-600);border:1px solid var(--purple-800)"></div>
+        Through node
+      </div>
+      <div class="legend-row">
+        <div class="legend-swatch" style="background:var(--purple-50);border:1px solid var(--purple-600)"></div>
+        Entry / exit
+      </div>
+      <div class="legend-row">
+        <div class="legend-swatch" style="background:#fff;border:1px solid var(--gray-border);opacity:.4"></div>
+        Out-of-flow
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
   cytoscape.use(cytoscapeDagre);
 
   let cy;
-  let selectedFlowId = null;
+  let nav = null;
+  let selectedFlowId  = null;
+  let selectedNodeId  = null;
+  let selectedEdgeId  = null;
+  let allFlows    = [];
+  let allPackages = [];
+
+  const breadcrumb   = document.getElementById('breadcrumb');
+  const bcParent     = document.getElementById('bc-parent');
+  const bcFlow       = document.getElementById('bc-flow');
+  const stepsLabel   = document.getElementById('steps-label');
+  const stepsList    = document.getElementById('steps-list');
+  const sidebarLabel = document.getElementById('sidebar-label');
+  const flowSearch   = document.getElementById('flow-search');
+
+  // ── Data loading ────────────────────────────────────────────────────────
 
   fetch('flows.json')
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-    .then(data => {
-      return fetch('settings.json')
+    .then(data =>
+      fetch('settings.json')
         .then(r => r.ok ? r.json() : null)
         .catch(() => null)
-        .then(settings => init(data, settings));
-    })
+        .then(settings => init(data, settings))
+    )
     .catch(() => {
       document.getElementById('error-panel').style.display = 'block';
       document.getElementById('hint').style.display = 'none';
     });
+
+  // ── Navigation ──────────────────────────────────────────────────────────
 
   function buildNav(settings) {
     if (!settings || !settings.navigation) return null;
@@ -261,56 +538,66 @@
     const providers = {
       vscode: {
         openPackage: (path, entryFile) => `vscode://file/${config.workspacePath}/${entryFile || path}`,
-        openStep: (file, line) => `vscode://file/${config.workspacePath}/${file}:${line}`
+        openStep:    (file, line)       => `vscode://file/${config.workspacePath}/${file}:${line}`
       },
       github: {
-        openPackage: (path) => `https://github.com/${config.repo}/tree/${config.branch}/${path}`,
-        openStep: (file, line) => `https://github.com/${config.repo}/blob/${config.branch}/${file}#L${line}`
+        openPackage: (path)       => `https://github.com/${config.repo}/tree/${config.branch}/${path}`,
+        openStep:    (file, line) => `https://github.com/${config.repo}/blob/${config.branch}/${file}#L${line}`
       }
     };
     return providers[provider] || null;
   }
 
+  // ── Init ────────────────────────────────────────────────────────────────
+
   function init(data, settings) {
-    const nav = buildNav(settings);
+    nav = buildNav(settings);
     if (!nav) document.getElementById('nav-warning').style.display = 'block';
 
-    const { packages, flows } = data;
+    allPackages = data.packages;
+    allFlows    = data.flows;
 
+    sidebarLabel.textContent = `Flows · ${allFlows.length}`;
+    // Hidden element kept for test backward-compat
     document.getElementById('flow-count').textContent =
-      `${flows.length} flow${flows.length !== 1 ? 's' : ''}`;
+      `${allFlows.length} flow${allFlows.length !== 1 ? 's' : ''}`;
 
-    // Build sidebar
+    // Sidebar flow list
     const list = document.getElementById('flow-list');
-    flows.forEach(flow => {
+    allFlows.forEach(flow => {
+      const pkgIds = new Set(flow.steps.flatMap(s => [s.source, s.target]));
+      const nSteps = flow.steps.length;
+      const nPkgs  = pkgIds.size;
+      const meta   = `${nSteps} step${nSteps !== 1 ? 's' : ''} · ${nPkgs} package${nPkgs !== 1 ? 's' : ''}`;
+
       const el = document.createElement('div');
-      el.className = 'flow-item';
+      el.className      = 'flow-item';
       el.dataset.flowId = flow.id;
-      el.innerHTML = `<span class="flow-dot"></span><span>${flow.name}</span>`;
+      el.innerHTML      = `<div class="flow-name">${flow.name}</div><div class="flow-meta">${meta}</div>`;
       el.addEventListener('click', () => toggleFlow(flow.id));
       list.appendChild(el);
     });
 
-    // Build elements
+    // Cytoscape elements
     const elements = [];
 
-    packages.forEach(pkg => {
+    allPackages.forEach(pkg => {
       elements.push({ data: { id: pkg.id, label: pkg.name, path: pkg.path, entryFile: pkg.entryFile || null } });
     });
 
-    flows.forEach(flow => {
+    allFlows.forEach(flow => {
       flow.steps.forEach(step => {
-        const location = step.location || null;
         elements.push({
           data: {
-            id: `${flow.id}__${step.order}`,
-            source: step.source,
-            target: step.target,
-            label: `${step.order}. ${step.label}`,
-            flowId: flow.id,
-            location
+            id:       `${flow.id}__${step.order}`,
+            source:   step.source,
+            target:   step.target,
+            label:    `${step.order}. ${step.label}`,
+            flowId:   flow.id,
+            order:    step.order,
+            location: step.location || null
           },
-          classes: location ? 'flow-edge' : 'flow-edge no-location'
+          classes: step.location ? 'flow-edge' : 'flow-edge no-location'
         });
       });
     });
@@ -322,120 +609,120 @@
         {
           selector: 'node',
           style: {
-            label: 'data(label)',
-            'background-color': '#dbeafe',
-            'border-color': '#93c5fd',
-            'border-width': 2,
-            color: '#1e40af',
-            'font-size': 13,
-            'font-weight': 500,
-            'text-valign': 'center',
-            'text-halign': 'center',
-            shape: 'round-rectangle',
-            width: 'label',
-            height: 36,
-            padding: '12px',
-            'transition-property': 'background-color, border-color, color, opacity',
+            label:             'data(label)',
+            'background-color': '#ffffff',
+            'border-color':    '#E0E0E7',
+            'border-width':    1,
+            color:             '#1A1A1E',
+            'font-size':       13,
+            'font-weight':     500,
+            'text-valign':     'center',
+            'text-halign':     'center',
+            shape:             'round-rectangle',
+            width:             'label',
+            height:            40,
+            padding:           '14px',
+            'transition-property': 'background-color, border-color, border-width, color, opacity',
             'transition-duration': '0.15s'
           }
         },
         {
-          selector: 'node.dimmed',
+          selector: 'node.out-of-flow',
           style: {
-            'background-color': '#f3f4f6',
-            'border-color': '#e5e7eb',
-            color: '#9ca3af',
-            opacity: 0.5
+            'background-color': '#ffffff',
+            'border-color':    '#E0E0E7',
+            color:             '#A0A0AF',
+            opacity:           0.35
           }
         },
         {
-          selector: 'node.highlighted',
+          selector: 'node.in-flow',
           style: {
-            'background-color': '#fef3c7',
-            'border-color': '#f59e0b',
-            'border-width': 2.5,
-            color: '#78350f'
+            'background-color': '#EEEDFE',
+            'border-color':    '#534AB7',
+            'border-width':    1.5,
+            color:             '#26215C'
+          }
+        },
+        {
+          selector: 'node.in-flow-through',
+          style: {
+            'background-color': '#534AB7',
+            'border-color':    '#3C3489',
+            'border-width':    1.5,
+            color:             '#EEEDFE'
+          }
+        },
+        {
+          selector: 'node.selected',
+          style: {
+            'border-width': 3,
+            opacity:        1
           }
         },
         {
           selector: 'edge',
           style: {
-            'curve-style': 'bezier',
+            'curve-style':        'bezier',
             'target-arrow-shape': 'triangle',
-            'arrow-scale': 1.2,
-            'line-color': '#f59e0b',
-            'target-arrow-color': '#f59e0b',
-            label: 'data(label)',
-            'font-size': 11,
-            color: '#78350f',
-            'text-background-color': '#fffbeb',
+            'arrow-scale':        1.2,
+            'line-color':         '#534AB7',
+            'target-arrow-color': '#534AB7',
+            label:                'data(label)',
+            'font-size':          9,
+            color:                '#534AB7',
+            'text-background-color':   '#ffffff',
             'text-background-opacity': 1,
-            'text-background-padding': '3px',
-            'text-background-shape': 'roundrectangle',
-            'text-rotation': 'autorotate',
-            width: 2,
-            opacity: 0,
-            events: 'no',
+            'text-background-padding': '4px',
+            'text-background-shape':   'roundrectangle',
+            'text-border-color':       '#AFA9EC',
+            'text-border-width':       1,
+            'text-border-opacity':     1,
+            'text-rotation':           'none',
+            width:                2.5,
+            opacity:              0,
+            events:               'no',
             'transition-property': 'opacity',
             'transition-duration': '0.15s'
           }
         },
         {
           selector: 'edge.visible',
-          style: {
-            opacity: 1,
-            events: 'yes'
-          }
+          style: { opacity: 1, events: 'yes' }
         },
         {
           selector: 'edge.no-location.visible',
           style: {
-            'line-color': '#94a3b8',
-            'target-arrow-color': '#94a3b8',
-            color: '#64748b',
-            'text-background-color': '#f8fafc',
-            'line-style': 'dashed'
-          }
-        },
-        {
-          selector: 'node.selected',
-          style: {
-            'background-color': '#ddf4ff',
-            'border-color': '#0969da',
-            'border-width': 3,
-            color: '#0550ae'
+            'line-color':         '#AFA9EC',
+            'target-arrow-color': '#AFA9EC',
+            'line-style':         'dashed'
           }
         },
         {
           selector: 'edge.selected',
           style: {
-            'line-color': '#0969da',
-            'target-arrow-color': '#0969da',
-            color: '#0550ae',
-            'text-background-color': '#ddf4ff',
-            width: 3
+            'line-color':         '#3C3489',
+            'target-arrow-color': '#3C3489',
+            width:                3
           }
         }
       ],
       layout: {
-        name: 'dagre',
-        rankDir: 'LR',
-        nodeSep: 50,
-        rankSep: 120,
+        name:    'dagre',
+        rankDir: 'TB',
+        nodeSep: 60,
+        rankSep: 80,
         padding: 48,
         animate: false
       },
       wheelSensitivity: 0.2
     });
 
-    let selectedNodeId = null;
-    let selectedEdgeId = null;
-
+    // Node tap — toggle selected, navigate directly on first click
     cy.on('tap', 'node', evt => {
       const node = evt.target;
       if (selectedNodeId === node.id()) {
         node.removeClass('selected');
-        hideStrip();
         selectedNodeId = null;
         return;
       }
@@ -445,9 +732,10 @@
       node.addClass('selected');
       selectedNodeId = node.id();
       const url = nav ? nav.openPackage(node.data('path'), node.data('entryFile')) : null;
-      showStrip(node.data('label'), node.data('path'), url);
+      if (url) window.open(url);
     });
 
+    // Edge tap — highlight step card
     cy.on('tap', 'edge.visible', evt => {
       cy.nodes().removeClass('selected');
       cy.edges().removeClass('selected');
@@ -455,75 +743,182 @@
       const edge = evt.target;
       edge.addClass('selected');
       selectedEdgeId = edge.id();
-      const location = edge.data('location');
-      const url = (nav && location) ? nav.openStep(location.file, location.line) : null;
-      showStrip(edge.data('label'), location ? `${location.file}:${location.line}` : null, url);
+      setActiveStep(edge.data('order'));
+    });
+
+    // Tap on background — deselect
+    cy.on('tap', evt => {
+      if (evt.target === cy) {
+        cy.nodes().removeClass('selected');
+        cy.edges().removeClass('selected');
+        selectedNodeId = null;
+        selectedEdgeId = null;
+        if (selectedFlowId) setActiveStep(null);
+      }
+    });
+
+    // Zoom buttons
+    document.getElementById('btn-fit').addEventListener('click', () => cy.fit());
+    document.getElementById('btn-zoom-out').addEventListener('click', () =>
+      cy.zoom({ level: cy.zoom() * 0.8, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } })
+    );
+    document.getElementById('btn-zoom-in').addEventListener('click', () =>
+      cy.zoom({ level: cy.zoom() * 1.25, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } })
+    );
+    document.getElementById('btn-zoom-reset').addEventListener('click', () => { cy.zoom(1); cy.center(); });
+
+    // Search
+    flowSearch.addEventListener('input', () => {
+      const q = flowSearch.value.toLowerCase();
+      document.querySelectorAll('.flow-item').forEach(el => {
+        el.style.display = el.querySelector('.flow-name').textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
     });
   }
 
-  function showStrip(name, detail, url) {
-    const strip = document.getElementById('info-strip');
-    document.getElementById('info-strip-name').textContent = name || '';
-    document.getElementById('info-strip-detail').textContent = detail || '';
-    const link = document.getElementById('info-strip-link');
-    if (url) {
-      link.style.display = '';
-      link.onclick = e => { e.preventDefault(); window.open(url); };
-    } else {
-      link.style.display = 'none';
-    }
-    strip.style.display = 'flex';
-  }
+  // ── Flow selection ──────────────────────────────────────────────────────
 
-  function hideStrip() {
-    document.getElementById('info-strip').style.display = 'none';
-    if (cy) { cy.nodes().removeClass('selected'); cy.edges().removeClass('selected'); }
+  function classifyNode(nodeId, steps) {
+    const asSrc = steps.some(s => s.source === nodeId);
+    const asTgt = steps.some(s => s.target === nodeId);
+    if (asSrc && asTgt) return 'in-flow-through';
+    if (asSrc || asTgt) return 'in-flow';
+    return 'out-of-flow';
   }
 
   function toggleFlow(flowId) {
-    if (selectedFlowId === flowId) {
-      clearSelection();
-      return;
-    }
+    if (selectedFlowId === flowId) { clearSelection(); return; }
 
     selectedFlowId = flowId;
+    const flow = allFlows.find(f => f.id === flowId);
 
-    document.querySelectorAll('.flow-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.flowId === flowId);
-    });
-
-    const flowEdges = cy.edges(`[flowId = "${flowId}"]`);
-    const involvedNodes = new Set();
-    flowEdges.forEach(edge => {
-      involvedNodes.add(edge.data('source'));
-      involvedNodes.add(edge.data('target'));
-    });
+    document.querySelectorAll('.flow-item').forEach(el =>
+      el.classList.toggle('active', el.dataset.flowId === flowId)
+    );
 
     cy.nodes().forEach(node => {
-      node.removeClass('dimmed highlighted');
-      if (involvedNodes.has(node.id())) {
-        node.addClass('highlighted');
-      } else {
-        node.addClass('dimmed');
-      }
+      node.removeClass('in-flow in-flow-through out-of-flow selected');
+      node.addClass(classifyNode(node.id(), flow.steps));
     });
 
     cy.edges().forEach(edge => {
-      edge.removeClass('visible');
-      if (edge.data('flowId') === flowId) {
-        edge.addClass('visible');
-      }
+      edge.removeClass('visible selected');
+      if (edge.data('flowId') === flowId) edge.addClass('visible');
     });
 
-    document.getElementById('hint').textContent = 'Click the same flow to deselect';
+    updateBreadcrumb(flow);
+    renderSteps(flow);
+    document.getElementById('hint').textContent = 'Click the same flow to deselect · click a step or edge for details';
   }
 
   function clearSelection() {
     selectedFlowId = null;
     document.querySelectorAll('.flow-item').forEach(el => el.classList.remove('active'));
-    cy.nodes().removeClass('dimmed highlighted');
-    cy.edges().removeClass('visible');
+    cy.nodes().removeClass('in-flow in-flow-through out-of-flow selected');
+    cy.edges().removeClass('visible selected');
+    selectedNodeId = null;
+    selectedEdgeId = null;
+    updateBreadcrumb(null);
+    renderSteps(null);
     document.getElementById('hint').textContent = 'Click a flow to highlight its path';
+  }
+
+  // ── Breadcrumb ──────────────────────────────────────────────────────────
+
+  function updateBreadcrumb(flow) {
+    if (!flow || !flow.steps.length) {
+      breadcrumb.style.display = 'none';
+      return;
+    }
+    const firstPkg = allPackages.find(p => p.id === flow.steps[0].source);
+    bcParent.textContent = firstPkg ? firstPkg.name : '';
+    bcFlow.textContent   = flow.name;
+    breadcrumb.style.display = 'flex';
+  }
+
+  // ── Steps panel ─────────────────────────────────────────────────────────
+
+  function renderSteps(flow) {
+    stepsList.innerHTML = '';
+
+    if (!flow) {
+      stepsLabel.textContent = 'Steps · 0';
+      const empty = document.createElement('div');
+      empty.id          = 'steps-empty';
+      empty.textContent = 'Select a flow to see steps';
+      stepsList.appendChild(empty);
+      return;
+    }
+
+    stepsLabel.textContent = `Steps · ${flow.steps.length}`;
+
+    const pkgName = id => (allPackages.find(p => p.id === id) || { name: id }).name;
+
+    flow.steps.forEach((step, i) => {
+      const loc    = step.location;
+      const fileRef = loc ? `${loc.file}:${loc.line}` : null;
+      const url    = (nav && loc) ? nav.openStep(loc.file, loc.line) : null;
+
+      const card = document.createElement('div');
+      card.className    = 'step-card' + (i === 0 ? ' active' : '');
+      card.dataset.order = step.order;
+
+      const fileHtml = fileRef
+        ? `<div class="step-sep"></div>
+           ${url
+             ? `<a class="step-fileref" href="${url}" target="_blank">${docIconSvg()}${escHtml(fileRef)}</a>`
+             : `<span class="step-fileref">${docIconSvg()}${escHtml(fileRef)}</span>`}`
+        : '';
+
+      card.innerHTML = `
+        <div class="step-card-header">Step ${step.order}</div>
+        <div class="step-card-body">
+          <div class="step-label">${escHtml(step.label)}</div>
+          <div class="from-to-block">
+            <div class="from-to-key">From</div>
+            <span class="step-pill">${escHtml(pkgName(step.source))}</span>
+          </div>
+          <div class="from-to-block">
+            <div class="from-to-key">To</div>
+            <span class="step-pill">${escHtml(pkgName(step.target))}</span>
+          </div>
+          ${fileHtml}
+        </div>`;
+
+      card.addEventListener('click', e => {
+        // Don't re-fire if user clicked a link inside
+        if (e.target.closest('a')) return;
+        if (!cy) return;
+        cy.edges().removeClass('selected');
+        cy.getElementById(`${flow.id}__${step.order}`).addClass('selected');
+        setActiveStep(step.order);
+      });
+
+      stepsList.appendChild(card);
+    });
+  }
+
+  function setActiveStep(order) {
+    document.querySelectorAll('.step-card').forEach(card => {
+      card.classList.toggle('active', order !== null && Number(card.dataset.order) === order);
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function docIconSvg() {
+    return `<svg width="11" height="13" viewBox="0 0 11 13" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+      <path d="M1.5 0.5h5l3.5 3.5V12.5h-8.5V0.5z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M6 0.5V4.5h3.5" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      <line x1="3" y1="7"   x2="8"  y2="7"   stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="3" y1="9.5" x2="6.5" y2="9.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>`;
   }
 </script>
 

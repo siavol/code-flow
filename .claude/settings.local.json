@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx cypress *)"
+      "Bash(npx cypress *)",
+      "mcp__penpot__high_level_overview",
+      "mcp__penpot__execute_code",
+      "mcp__penpot__penpot_api_info",
+      "mcp__penpot__export_shape"
     ]
   }
 }

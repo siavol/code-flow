@@ -14,7 +14,8 @@ describe('Highlighting', () => {
     // invite-user touches api-gateway, auth, users, email
     cy.window().then(win => {
       ['api-gateway', 'auth', 'users', 'email'].forEach(id => {
-        expect(win.eval('cy').getElementById(id).hasClass('highlighted'), id).to.be.true;
+        const node = win.eval('cy').getElementById(id);
+        expect(node.hasClass('in-flow') || node.hasClass('in-flow-through'), id).to.be.true;
       });
     });
   });
@@ -23,7 +24,7 @@ describe('Highlighting', () => {
     cy.contains('.flow-item', 'Log in').click();
     // log-in touches api-gateway, auth, users — email is not involved
     cy.window().then(win => {
-      expect(win.eval('cy').getElementById('email').hasClass('dimmed')).to.be.true;
+      expect(win.eval('cy').getElementById('email').hasClass('out-of-flow')).to.be.true;
     });
   });
 
