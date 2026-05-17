@@ -9,8 +9,9 @@ Running `/document-flows` in your project produces `flows/index.html` — open i
 
 ```
 flows/
-├── index.html   ← open this (requires a local server)
-└── flows.json   ← generated data; re-run the skill to update
+├── index.html     ← open this (requires a local server)
+├── flows.json     ← generated data; re-run the skill to update
+└── settings.json  ← navigation config; edit to link nodes to VS Code or GitHub
 ```
 
 ## Install
@@ -52,3 +53,26 @@ Then open the result:
 npx serve flows/
 # open http://localhost:3000
 ```
+
+## Configuring code navigation
+
+The viewer can open files directly in VS Code or on GitHub when you click a package node or a flow step. This is controlled by `flows/settings.json`, which the skill writes automatically on first run.
+
+```json
+{
+  "navigation": {
+    "provider": "vscode",
+    "vscode": { "workspacePath": "/absolute/path/to/repo" },
+    "github": { "repo": "owner/repo", "branch": "main" }
+  }
+}
+```
+
+| Field                             | Description                                    |
+| --------------------------------- | ---------------------------------------------- |
+| `navigation.provider`             | Active provider: `"vscode"` or `"github"`      |
+| `navigation.vscode.workspacePath` | Absolute path to the repo root on your machine |
+| `navigation.github.repo`          | GitHub repo in `owner/repo` format             |
+| `navigation.github.branch`        | Branch to link against (e.g. `"main"`)         |
+
+Switch providers at any time by editing `flows/settings.json` — no re-run needed, just reload the viewer. If the file is absent, navigation links are disabled and a warning is shown in the viewer.
