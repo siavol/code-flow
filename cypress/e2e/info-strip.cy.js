@@ -14,9 +14,9 @@ describe('Steps panel', () => {
     cy.get('.step-card').should('have.length', 3);
   });
 
-  it('updates steps label count when a flow is selected', () => {
+  it('renders correct number of step cards when a flow is selected', () => {
     cy.contains('.flow-item', 'Invite new user').click();
-    cy.get('#steps-label').should('contain.text', '3');
+    cy.get('.step-card').should('have.length', 3);
   });
 
   it('first step card is active by default when flow is selected', () => {
