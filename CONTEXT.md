@@ -41,8 +41,18 @@ The contract between the skill (writer) and the Viewer (reader). Pure data — n
 
 ```json
 {
+  "services": [
+    {
+      "id": "auth-service",
+      "name": "Auth Service",
+      "path": "services/auth",
+      "techStack": "ASP.NET Core",
+      "description": "Handles authentication and authorization"
+    }
+  ],
   "packages": [
-    { "id": "auth", "name": "Auth", "path": "src/auth", "entryFile": "src/auth/index.js" }
+    { "id": "auth", "name": "Auth", "path": "services/auth/src/auth", "entryFile": "services/auth/src/auth/index.js", "serviceId": "auth-service" },
+    { "id": "utils", "name": "Utils", "path": "shared/utils", "entryFile": null, "serviceId": null }
   ],
   "flows": [
     {
@@ -51,7 +61,7 @@ The contract between the skill (writer) and the Viewer (reader). Pure data — n
       "steps": [
         {
           "source": "auth", "target": "users", "label": "create pending user", "order": 1,
-          "location": { "file": "src/auth/inviteService.js", "line": 42 }
+          "location": { "file": "services/auth/src/auth/inviteService.js", "line": 42 }
         }
       ]
     }
@@ -60,9 +70,14 @@ The contract between the skill (writer) and the Viewer (reader). Pure data — n
 ```
 
 Field rules:
+- `services[].id` — lowercased, hyphenated; used as foreign key in packages
+- `services[].path` — relative path from repo root to the Service root directory (the directory containing the deployment signal)
+- `services[].techStack` — agent-inferred tech stack label (e.g. `"ASP.NET Core"`, `"Node.js"`, `"Go"`, `"Docker"`); derived from the signal that identified the Service root
+- `services[].description` — agent-inferred one-sentence summary from the Service's `README.md`; `null` when no README exists
 - `packages[].id` — lowercased, hyphenated directory name; used as foreign key in steps
 - `packages[].path` — relative path from repo root; used as navigation target for the Package (directory)
 - `packages[].entryFile` — relative path to the package's primary entry file (e.g. `src/auth/index.js`); used by vscode provider to navigate to a file rather than a directory; `null` when no clear entry file exists
+- `packages[].serviceId` — foreign key into `services[].id`; `null` for Packages that belong to the Shared Layer
 - `steps[].source` / `steps[].target` — must reference a `packages[].id`
 - `steps[].label` — agent-written plain English, 3–6 words; never raw code symbols
 - `steps[].order` — integer starting at 1; multiple steps between the same two packages allowed
@@ -86,6 +101,14 @@ Navigation and other Viewer configuration. Lives alongside `flows.json` in `flow
 - Provider properties are namespaced by provider name; all providers can be pre-configured; only the active `provider` is used
 
 ## Language
+
+**Service**:
+A named deployment unit (process boundary) that owns one or more Packages. Services communicate via process-to-process mechanisms (network, message queues, IPC, etc.). Multiple Services may coexist in the same repository (monorepo). Discovered automatically by the skill from stack-specific signals: a `.csproj` with an entry point (`.NET`), a `package.json` with a `start` script (`Node.js`), a directory containing `package main` (`Go`), or a `Dockerfile`. A Package belongs to the Service whose root directory is its nearest ancestor containing such a signal.
+_Avoid_: application, microservice, project (when meaning Service)
+
+**Shared Layer**:
+The implicit grouping of Packages that belong to no Service — shared libraries, utilities, or cross-cutting concerns with no deployment signal in any ancestor directory. Rendered in the Viewer as a compound node labeled "Shared".
+_Avoid_: commons, core, base (when meaning the Shared Layer as a whole)
 
 **Package**:
 A named directory boundary in the codebase that owns a coherent responsibility (e.g., `auth`, `billing`, `api-gateway`).
@@ -113,9 +136,13 @@ _Avoid_: source, reference, pointer
 
 ## Relationships
 
+- A **Service** contains one or more **Packages**
+- A **Package** belongs to zero or one **Service**; Packages with no Service belong to the **Shared Layer**
 - A **Flow** consists of one or more **Steps**
 - A **Step** has exactly one source **Package** and one target **Package**
 - A **Step** has zero or one **Location**; steps without a Location are rendered in a distinct color and are not navigable
+- A **Step** whose source and target **Packages** belong to different **Services** (or one belongs to the **Shared Layer**) is a cross-service Step; the Viewer renders it with a dashed edge
+- The **Viewer** renders each **Service** as a compound node containing its **Packages**; clicking a Service compound node shows the Service's name, path, tech stack, and description in the side panel — it does not navigate
 - The **Viewer** reads one `flows.json` and renders all **Packages** and **Flows**
 - The **Viewer** loads `settings.json` to determine the active **Provider**; if `settings.json` is absent or misconfigured, navigation is disabled and a warning is shown
 - A **Provider** uses `packages[].entryFile` (when set) or `packages[].path` for Package navigation, and `steps[].location` for Step navigation
@@ -130,3 +157,9 @@ _Avoid_: source, reference, pointer
 - "component" was used to mean **Package** — resolved: Package is the only node type
 - "workflow" was used to mean **Flow** — resolved: Flow is the canonical term
 - "connection" was used to mean **Step** — resolved: Step is the canonical term
+
+## Visual design
+
+The Viewer's color palette and component-level color rules are documented in [`color-schema.md`](../color-schema.md).
+
+That file is the source of truth for all color decisions in the Viewer — node fills, edge strokes, step card states, flow list states, and service tag styles. When changing Viewer appearance, update `color-schema.md` in the same change.

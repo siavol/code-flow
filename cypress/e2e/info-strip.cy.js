@@ -14,21 +14,31 @@ describe('Steps panel', () => {
     cy.get('.step-card').should('have.length', 3);
   });
 
-  it('updates steps label count when a flow is selected', () => {
+  it('step cards are collapsed by default when a flow is selected', () => {
     cy.contains('.flow-item', 'Invite new user').click();
-    cy.get('#steps-label').should('contain.text', '3');
+    cy.get('.step-card').should('have.length', 3);
+    cy.get('.step-card.expanded').should('not.exist');
+    cy.get('.step-card.active').should('not.exist');
   });
 
-  it('first step card is active by default when flow is selected', () => {
+  it('clicking a step card expands it', () => {
     cy.contains('.flow-item', 'Invite new user').click();
-    cy.get('.step-card[data-order="1"]').should('have.class', 'active');
-    cy.get('.step-card[data-order="2"]').should('not.have.class', 'active');
+    cy.get('.step-card[data-order="1"]').click();
+    cy.get('.step-card[data-order="1"]').should('have.class', 'expanded');
   });
 
-  it('activates the matching step card when a visible edge is tapped', () => {
+  it('clicking an expanded step card collapses it', () => {
+    cy.contains('.flow-item', 'Invite new user').click();
+    cy.get('.step-card[data-order="1"]').click();
+    cy.get('.step-card[data-order="1"]').click();
+    cy.get('.step-card[data-order="1"]').should('not.have.class', 'expanded');
+  });
+
+  it('activates and expands the matching step card when a visible edge is tapped', () => {
     cy.contains('.flow-item', 'Invite new user').click();
     cy.window().then(win => win.eval('cy').getElementById('invite-user__2').emit('tap'));
     cy.get('.step-card[data-order="2"]').should('have.class', 'active');
+    cy.get('.step-card[data-order="2"]').should('have.class', 'expanded');
     cy.get('.step-card[data-order="1"]').should('not.have.class', 'active');
   });
 
